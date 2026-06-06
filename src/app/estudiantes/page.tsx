@@ -1,4 +1,12 @@
+"use client";
+
+import {
+  getEstudianteIniciales,
+  getEstudiantes,
+  type Estudiante,
+} from "@/lib/students-storage";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -6,8 +14,8 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 const navItems = [
   { label: "Dashboard", href: "/", active: false, icon: LayoutDashboardIcon },
   { label: "Estudiantes", href: "/estudiantes", active: true, icon: UsersIcon },
-  { label: "Sesiones", href: "#", active: false, icon: CalendarIcon },
-  { label: "Objetivos", href: "#", active: false, icon: TargetIcon },
+  { label: "Sesiones", href: "/sesiones", active: false, icon: CalendarIcon },
+  { label: "Objetivos", href: "/objetivos", active: false, icon: TargetIcon },
   { label: "Reportes", href: "#", active: false, icon: ChartIcon },
 ] as const;
 
@@ -118,34 +126,81 @@ function ChartIcon({ className }: { className?: string }) {
 
 
 export default function EstudiantesPage() {
-  const students = [
-    { name: "Martina Ramírez", course: "3° Básico", href: "/estudiantes/martina", initials: "MR", highlight: true },
-    { name: "Tomás Herrera", course: "4° Básico", href: "#", initials: "TH", highlight: false },
-    { name: "Sofía Lagos", course: "2° Medio", href: "#", initials: "SL", highlight: false },
-    { name: "Benjamín Ortiz", course: "5° Básico", href: "#", initials: "BO", highlight: false },
-  ] as const;
+  const [students, setStudents] = useState<Estudiante[]>([]);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("eliminado") === "1") {
+      setDeleteMessage("Estudiante eliminado correctamente.");
+      window.history.replaceState(null, "", "/estudiantes");
+      window.setTimeout(() => setDeleteMessage(null), 4000);
+    }
+  }, []);
+
+  useEffect(() => {
+    function refreshStudents() {
+      setStudents(getEstudiantes());
+    }
+
+    refreshStudents();
+    window.addEventListener("focus", refreshStudents);
+    window.addEventListener("storage", refreshStudents);
+
+    return () => {
+      window.removeEventListener("focus", refreshStudents);
+      window.removeEventListener("storage", refreshStudents);
+    };
+  }, []);
+
   return (
     <AppShell
       header={
         <header className="sticky top-0 z-20 border-b border-teal-900/5 bg-[#f4f7f6]/90 px-8 py-6 backdrop-blur-md">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Estudiantes</h1>
-          <p className="mt-1 text-sm text-slate-600">Fichas con enfoque en fortalezas y neurobienestar escolar</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                Estudiantes
+              </h1>
+              <p className="mt-1 text-sm text-slate-600">
+                Fichas con enfoque en fortalezas y neurobienestar escolar
+              </p>
+            </div>
+            <Link
+              href="/estudiantes/nuevo"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
+            >
+              Nuevo estudiante
+            </Link>
+          </div>
         </header>
       }
     >
+      {deleteMessage && (
+        <p
+          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          role="status"
+        >
+          {deleteMessage}
+        </p>
+      )}
+
       <ul className="space-y-3">
-        {students.map((s) => (
-          <li key={s.name}>
-            {s.highlight ? (
-              <Link href={s.href} className="flex items-center gap-4 rounded-2xl border border-teal-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,60,50,0.06)] transition hover:border-teal-300 hover:shadow-md">
-                <StudentRow {...s} />
-              </Link>
-            ) : (
-              <div className="flex items-center gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 opacity-90">
-                <StudentRow {...s} />
-                <span className="ml-auto text-xs font-medium text-slate-400">Próximamente</span>
-              </div>
-            )}
+        {students.map((student) => (
+          <li key={student.id}>
+            <Link
+              href={`/estudiantes/${student.id}`}
+              className="flex items-center gap-4 rounded-2xl border border-teal-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,60,50,0.06)] transition hover:border-teal-300 hover:shadow-md"
+            >
+              <StudentRow
+                name={student.nombre}
+                course={student.curso}
+                initials={getEstudianteIniciales(student.nombre)}
+              />
+              <span className="ml-auto text-sm font-medium text-teal-700">
+                Ver ficha
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
@@ -153,7 +208,15 @@ export default function EstudiantesPage() {
   );
 }
 
-function StudentRow({ name, course, initials }: { name: string; course: string; href: string; initials: string; highlight: boolean }) {
+function StudentRow({
+  name,
+  course,
+  initials,
+}: {
+  name: string;
+  course: string;
+  initials: string;
+}) {
   return (
     <>
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 text-sm font-semibold text-white">{initials}</div>

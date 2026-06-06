@@ -6,8 +6,8 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 const navItems = [
   { label: "Dashboard", href: "/", active: true, icon: LayoutDashboardIcon },
   { label: "Estudiantes", href: "/estudiantes", active: false, icon: UsersIcon },
-  { label: "Sesiones", href: "#", active: false, icon: CalendarIcon },
-  { label: "Objetivos", href: "#", active: false, icon: TargetIcon },
+  { label: "Sesiones", href: "/sesiones", active: false, icon: CalendarIcon },
+  { label: "Objetivos", href: "/objetivos", active: false, icon: TargetIcon },
   { label: "Reportes", href: "#", active: false, icon: ChartIcon },
 ] as const;
 

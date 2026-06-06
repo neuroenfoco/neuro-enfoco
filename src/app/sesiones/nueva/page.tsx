@@ -1,8 +1,24 @@
 "use client";
 
+import {
+  BARRERA_OPTIONS,
+  calcularMejoraSesion,
+  CONTEXTO_EXITO_OPTIONS,
+  ESTRATEGIA_OPTIONS,
+  formatSesionFecha,
+  INTERES_OPTIONS,
+  saveSesion,
+  type Sesion,
+} from "@/lib/sessions-storage";
+import {
+  getEstudianteIniciales,
+  getEstudiantes,
+  MARTINA_STUDENT_ID,
+  type Estudiante,
+} from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -11,15 +27,8 @@ const navItems = [
   { label: "Dashboard", href: "/", active: false, icon: LayoutDashboardIcon },
   { label: "Estudiantes", href: "/estudiantes", active: false, icon: UsersIcon },
   { label: "Sesiones", href: "/sesiones/nueva", active: true, icon: CalendarIcon },
-  { label: "Objetivos", href: "#", active: false, icon: TargetIcon },
+  { label: "Objetivos", href: "/objetivos", active: false, icon: TargetIcon },
   { label: "Reportes", href: "#", active: false, icon: ChartIcon },
-] as const;
-
-const students = [
-  { id: "martina", name: "Martina Ramírez", course: "3° Básico", initials: "MR" },
-  { id: "tomas", name: "Tomás Villanueva", course: "5° Básico · PIE", initials: "TV" },
-  { id: "sofia", name: "Sofía Morales", course: "2° Básico · Ley TEA", initials: "SM" },
-  { id: "diego", name: "Diego López", course: "4° Básico", initials: "DL" },
 ] as const;
 
 const spaces = [
@@ -64,23 +73,71 @@ const defaultAchievement =
 
 export default function NuevaSesionPage() {
   const router = useRouter();
-  const [selectedStudent, setSelectedStudent] = useState("martina");
+  const [students, setStudents] = useState<Estudiante[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState(MARTINA_STUDENT_ID);
+
+  useEffect(() => {
+    setStudents(getEstudiantes());
+  }, []);
   const [selectedSpace, setSelectedSpace] = useState<string>("Sala Multisensorial");
   const [initialState, setInitialState] = useState("neutral");
   const [finalState, setFinalState] = useState("regulada");
   const [strengths, setStrengths] = useState<string[]>(["Persistencia"]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [successContexts, setSuccessContexts] = useState<string[]>([]);
+  const [strategies, setStrategies] = useState<string[]>([]);
+  const [barriers, setBarriers] = useState<string[]>([]);
   const [dimensions, setDimensions] = useState<string[]>(["Regulación emocional"]);
   const [evidences, setEvidences] = useState<string[]>([]);
   const [achievement, setAchievement] = useState(defaultAchievement);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  function handleSaveSession() {
+  function getEmotionLabel(stateId: string): string {
+    return (
+      emotionalScale.find((state) => state.id === stateId)?.label ?? stateId
+    );
+  }
+
+  function buildSesion(): Sesion {
+    const student = students.find((item) => item.id === selectedStudentId);
+
+    return {
+      id: crypto.randomUUID(),
+      fecha: formatSesionFecha(),
+      estudianteId: student?.id ?? selectedStudentId,
+      estudiante: student?.nombre ?? "Estudiante",
+      espacio: selectedSpace,
+      estadoInicial: getEmotionLabel(initialState),
+      fortalezas: [...strengths],
+      interesesObservados: [...interests],
+      contextosExitoObservados: [...successContexts],
+      estrategiasQueAyudaron: [...strategies],
+      barrerasObservadas: [...barriers],
+      logro: achievement.trim(),
+      dimensiones: [...dimensions],
+      evidenciaPIE: evidences.includes("Evidencia PIE"),
+      evidenciaLeyTEA: evidences.includes("Evidencia Ley TEA"),
+      estadoFinal: getEmotionLabel(finalState),
+      mejoraSesion: calcularMejoraSesion(
+        getEmotionLabel(initialState),
+        getEmotionLabel(finalState)
+      ),
+    };
+  }
+
+  function persistSession(): void {
+    saveSesion(buildSesion());
+  }
+
+  function handleSaveAndNavigate(destination: "/sesiones" | `/estudiantes/${string}`) {
     if (isSaving) return;
+
+    persistSession();
     setIsSaving(true);
     setSaveMessage("Sesión registrada correctamente");
     window.setTimeout(() => {
-      router.push("/sesiones");
+      router.push(destination);
     }, 1500);
   }
 
@@ -179,12 +236,12 @@ export default function NuevaSesionPage() {
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 {students.map((student) => {
-                  const selected = selectedStudent === student.id;
+                  const selected = selectedStudentId === student.id;
                   return (
                     <button
                       key={student.id}
                       type="button"
-                      onClick={() => setSelectedStudent(student.id)}
+                      onClick={() => setSelectedStudentId(student.id)}
                       className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${
                         selected
                           ? "border-teal-300 bg-teal-50/60 ring-2 ring-teal-500/30"
@@ -198,14 +255,14 @@ export default function NuevaSesionPage() {
                             : "bg-slate-100 text-slate-600"
                         }`}
                       >
-                        {student.initials}
+                        {getEstudianteIniciales(student.nombre)}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">
-                          {student.name}
+                          {student.nombre}
                         </p>
                         <p className="truncate text-xs text-slate-500">
-                          {student.course}
+                          {student.curso}
                         </p>
                       </div>
                     </button>
@@ -263,6 +320,56 @@ export default function NuevaSesionPage() {
             </FormSection>
 
             <FormSection
+              title="Intereses observados"
+              subtitle="Motivadores y temas que conectaron durante la sesión"
+            >
+              <CheckboxGrid
+                options={INTERES_OPTIONS}
+                selected={interests}
+                onToggle={(value) => toggleItem(value, interests, setInterests)}
+                accent="teal"
+              />
+            </FormSection>
+
+            <FormSection
+              title="Contextos de éxito observados"
+              subtitle="Condiciones donde el estudiante se desenvolvió mejor"
+            >
+              <CheckboxGrid
+                options={CONTEXTO_EXITO_OPTIONS}
+                selected={successContexts}
+                onToggle={(value) =>
+                  toggleItem(value, successContexts, setSuccessContexts)
+                }
+                accent="teal"
+              />
+            </FormSection>
+
+            <FormSection
+              title="Estrategias que ayudaron"
+              subtitle="Ajustes y apoyos que facilitaron la participación"
+            >
+              <CheckboxGrid
+                options={ESTRATEGIA_OPTIONS}
+                selected={strategies}
+                onToggle={(value) => toggleItem(value, strategies, setStrategies)}
+                accent="teal"
+              />
+            </FormSection>
+
+            <FormSection
+              title="Barreras observadas"
+              subtitle="Aspectos que dificultaron la participación durante la sesión"
+            >
+              <CheckboxGrid
+                options={BARRERA_OPTIONS}
+                selected={barriers}
+                onToggle={(value) => toggleItem(value, barriers, setBarriers)}
+                accent="amber"
+              />
+            </FormSection>
+
+            <FormSection
               title="Logro observado"
               subtitle="Describe el avance desde un enfoque de fortalezas"
             >
@@ -310,7 +417,7 @@ export default function NuevaSesionPage() {
             <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-6 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={handleSaveSession}
+                onClick={() => handleSaveAndNavigate("/sesiones")}
                 disabled={isSaving}
                 className="inline-flex items-center justify-center rounded-lg border border-slate-200/80 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-200 hover:bg-teal-50/30 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -318,8 +425,11 @@ export default function NuevaSesionPage() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/estudiantes/martina")}
-                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
+                onClick={() =>
+                  handleSaveAndNavigate(`/estudiantes/${selectedStudentId}`)
+                }
+                disabled={isSaving}
+                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Guardar y Ver Estudiante
               </button>
