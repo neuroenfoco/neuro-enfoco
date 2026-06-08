@@ -1,15 +1,11 @@
+import { AppShell } from "@/components/layout/app-shell";
+import { CalendarIcon } from "@/components/layout/nav-icons";
+import { GLOSSARY } from "@/lib/copy/glossary";
+import { ROUTES } from "@/lib/copy/navigation";
 import Link from "next/link";
 import type { ComponentType, SVGProps } from "react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
-
-const navItems = [
-  { label: "Dashboard", href: "/", active: true, icon: LayoutDashboardIcon },
-  { label: "Estudiantes", href: "/estudiantes", active: false, icon: UsersIcon },
-  { label: "Sesiones", href: "/sesiones", active: false, icon: CalendarIcon },
-  { label: "Objetivos", href: "/objetivos", active: false, icon: TargetIcon },
-  { label: "Reportes", href: "#", active: false, icon: ChartIcon },
-] as const;
 
 const kpiCards = [
   {
@@ -108,7 +104,7 @@ const studentAchievements = [
     id: 1,
     student: "Martina R.",
     course: "3° básico",
-    text: "Logró utilizar una estrategia de regulación de forma autónoma.",
+    text: GLOSSARY.dashboard.logroRegulacion,
     tag: "Regulación emocional",
     time: "Hace 2 h",
     tagStyle: "bg-sky-50 text-sky-700",
@@ -116,8 +112,8 @@ const studentAchievements = [
   {
     id: 2,
     student: "Tomás V.",
-    course: "PIE · 5° básico",
-    text: "Mostró avances en tolerancia a la frustración.",
+    course: GLOSSARY.estudiante.cursoPie,
+    text: GLOSSARY.dashboard.logroFrustracion,
     tag: "Evidencia PIE",
     time: "Hace 5 h",
     tagStyle: "bg-violet-50 text-violet-700",
@@ -125,7 +121,7 @@ const studentAchievements = [
   {
     id: 3,
     student: "Sofía M.",
-    course: "Ley TEA · 2° básico",
+    course: GLOSSARY.estudiante.cursoConApoyosLey,
     text: "Participó activamente en una actividad grupal.",
     tag: "Ley TEA",
     time: "Ayer",
@@ -135,7 +131,7 @@ const studentAchievements = [
     id: 4,
     student: "Diego L.",
     course: "4° básico",
-    text: "Identificó correctamente sus emociones durante una sesión.",
+    text: GLOSSARY.dashboard.logroEmociones,
     tag: "Perfil evolutivo",
     time: "Ayer",
     tagStyle: "bg-amber-50 text-amber-800",
@@ -188,54 +184,8 @@ const multisensorialRoom = {
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen bg-[#f4f7f6] text-slate-800">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-teal-900/5 bg-white">
-        <div className="flex h-[4.25rem] items-center gap-2.5 border-b border-teal-900/5 px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-500 shadow-sm shadow-teal-600/20">
-            <BrainIcon className="h-5 w-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-slate-900">
-              Neuro Enfoco
-            </p>
-            <p className="truncate text-[11px] font-medium text-teal-700/80">
-              Neurobienestar escolar
-            </p>
-          </div>
-        </div>
-
-        <div className="mx-3 mt-4 rounded-xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-emerald-50/50 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-teal-700/70">
-            Enfoque
-          </p>
-          <p className="mt-0.5 text-xs leading-snug text-slate-600">
-            Fortalezas · PIE · Ley TEA · Perfil evolutivo
-          </p>
-        </div>
-
-        <nav className="flex-1 space-y-0.5 px-3 py-4">
-          {navItems.map((item) => (
-            <NavLink key={item.label} {...item} />
-          ))}
-        </nav>
-
-        <div className="border-t border-teal-900/5 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-800">
-              EP
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800">
-                Equipo PIE
-              </p>
-              <p className="truncate text-xs text-slate-500">Colegio Demo</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-h-screen flex-1 flex-col pl-64">
-        <header className="sticky top-0 z-20 border-b border-teal-900/5 bg-[#f4f7f6]/90 px-8 py-5 backdrop-blur-md">
+    <AppShell activeNav="dashboard">
+      <header className="sticky top-0 z-20 border-b border-teal-900/5 bg-[#f4f7f6]/90 px-8 py-5 backdrop-blur-md">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-teal-200/60 bg-teal-50/80 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-teal-800">
@@ -243,11 +193,10 @@ export default function Home() {
                 Neurobienestar escolar
               </div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                Centro de bienestar y seguimiento
+                {GLOSSARY.dashboard.titulo}
               </h1>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-                Regulación emocional, fortalezas del estudiante y evidencia
-                PIE / Ley TEA en un solo perfil socioemocional evolutivo.
+                {GLOSSARY.dashboard.subtitulo}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -259,10 +208,10 @@ export default function Home() {
                 Junio 2026
               </button>
               <Link
-                href="/sesiones/nueva"
+                href={ROUTES.intervencionesNueva}
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
               >
-                Registrar sesión
+                {GLOSSARY.intervencion.registrarCta}
               </Link>
             </div>
           </div>
@@ -354,16 +303,14 @@ export default function Home() {
                 ))}
               </ul>
               <p className="mt-5 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500">
-                El perfil evolutivo integra observaciones de aula, sesiones de
-                regulación y evidencias PIE / Ley TEA para documentar el
-                progreso longitudinal de cada estudiante.
+                {GLOSSARY.intervencion.perfilEvolutivoPie}
               </p>
             </div>
 
             <div className="xl:col-span-2 space-y-6">
               <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Logros del estudiante
+                  {GLOSSARY.dashboard.logrosRecientes}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Registros recientes centrados en avances y fortalezas
@@ -399,7 +346,7 @@ export default function Home() {
 
               <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Próximas sesiones
+                  {GLOSSARY.intervencion.proximas}
                 </h2>
                 <ul className="mt-4 space-y-3">
                   {upcomingSessions.map((session) => (
@@ -420,8 +367,7 @@ export default function Home() {
             </div>
           </section>
         </main>
-      </div>
-    </div>
+    </AppShell>
   );
 }
 
@@ -437,49 +383,6 @@ function SectionHeading({
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
     </div>
-  );
-}
-
-function NavLink({
-  label,
-  href,
-  active,
-  icon: Icon,
-}: {
-  label: string;
-  href: string;
-  active: boolean;
-  icon: IconComponent;
-}) {
-  const className = `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-    active
-      ? "bg-teal-50 text-teal-900"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-  }`;
-
-  const iconClassName = `h-[18px] w-[18px] shrink-0 ${
-    active ? "text-teal-700" : "text-slate-400 group-hover:text-teal-600/80"
-  }`;
-
-  const content = (
-    <>
-      <Icon className={iconClassName} />
-      {label}
-    </>
-  );
-
-  if (href === "#") {
-    return (
-      <span className={`${className} cursor-default`} aria-current={active ? "page" : undefined}>
-        {content}
-      </span>
-    );
-  }
-
-  return (
-    <Link href={href} className={className} aria-current={active ? "page" : undefined}>
-      {content}
-    </Link>
   );
 }
 
@@ -763,7 +666,7 @@ function MultisensorialRoomCard({
             Uso de Sala Multisensorial
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Sesiones y utilización mensual
+            {GLOSSARY.intervencion.salaMultisensorialMes}
           </p>
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-100">
@@ -781,29 +684,9 @@ function MultisensorialRoomCard({
         />
       </div>
       <p className="mt-5 rounded-xl border border-violet-50 bg-violet-50/30 px-4 py-3 text-sm font-medium text-slate-700">
-        {sessions} sesiones este mes
+        {GLOSSARY.intervencion.sesionesEsteMes(sessions)}
       </p>
     </article>
-  );
-}
-
-function BrainIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5a3 3 0 1 0-5.5 2.2A4 4 0 0 0 3 12v1a4 4 0 0 0 4 4h1" />
-      <path d="M12 5a3 3 0 1 1 5.5 2.2A4 4 0 0 1 21 12v1a4 4 0 0 1-4 4h-1" />
-      <path d="M12 5v14" />
-      <path d="M9 14h6" />
-    </svg>
   );
 }
 
@@ -821,101 +704,6 @@ function LeafIcon({ className }: { className?: string }) {
     >
       <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 18 2c1 2 2 4.5 2 8 0 5.5-4.5 10-9 10Z" />
       <path d="M2 21c0-3 1.5-5 5-5" />
-    </svg>
-  );
-}
-
-function LayoutDashboardIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="3" width="7" height="9" rx="1" />
-      <rect x="14" y="3" width="7" height="5" rx="1" />
-      <rect x="14" y="12" width="7" height="9" rx="1" />
-      <rect x="3" y="16" width="7" height="5" rx="1" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function TargetIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  );
-}
-
-function ChartIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9M13 17V5M8 17v-3" />
     </svg>
   );
 }

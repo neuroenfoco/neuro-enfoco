@@ -1,3 +1,26 @@
+import { GLOSSARY } from "@/lib/copy/glossary";
+import {
+  getEmotionDisplay,
+  getEstadoEmocionalValor,
+  normalizeEmotionalStateLabel,
+} from "@/lib/copy/emotional-states";
+import type {
+  ApoyoSesionId,
+  EvidenciaInstitucionalId,
+  NivelApoyoRequeridoId,
+  NivelParticipacionId,
+  SesionEspacioId,
+} from "@/lib/sesiones-form-catalog";
+import {
+  getSesionEspacioNombre,
+  resolveSesionEspacioId,
+} from "@/lib/sesiones-form-catalog";
+
+export {
+  getEmotionDisplay,
+  getEstadoEmocionalValor,
+  normalizeEmotionalStateLabel,
+} from "@/lib/copy/emotional-states";
 import {
   getEstudianteById,
   getEstudiantes,
@@ -23,6 +46,23 @@ export type Sesion = {
   contextosExitoObservados?: string[];
   estrategiasQueAyudaron?: string[];
   barrerasObservadas?: string[];
+  /** Evidencia vinculada a una intervención concreta. */
+  intervencionId?: string;
+  /** Hora de inicio en formato HH:mm. */
+  hora?: string;
+  /** Duración explícita de la intervención en minutos. */
+  duracionMinutos?: number;
+  profesionalId?: string;
+  profesionalNombre?: string;
+  espacioId?: SesionEspacioId;
+  /** IDs de ObjetivoPIE trabajados en la sesión. */
+  objetivosTrabajadosIds?: string[];
+  /** IDs del catálogo de apoyos utilizados. */
+  apoyosUtilizados?: ApoyoSesionId[];
+  nivelParticipacion?: NivelParticipacionId;
+  nivelApoyoRequerido?: NivelApoyoRequeridoId;
+  /** Categorías institucionales seleccionadas (extensible). */
+  evidenciasInstitucionales?: EvidenciaInstitucionalId[];
 };
 
 export const INTERES_OPTIONS = [
@@ -71,7 +111,7 @@ export const BARRERA_OPTIONS = [
   "Esperas prolongadas",
   "Sobrecarga sensorial",
   "Actividades poco estructuradas",
-  "Trabajo grupal complejo",
+  GLOSSARY.barreras.trabajoGrupal,
   "Demandas simultáneas",
   "Exceso de estímulos",
   "Falta de anticipación",
@@ -118,26 +158,6 @@ export type SesionTableRow = {
 
 const STORAGE_KEY = "neuro-enfoco-sesiones";
 
-const EMOTION_DISPLAY: Record<string, { emoji: string; label: string }> = {
-  "Muy alterada": { emoji: "😣", label: "Muy alterada" },
-  Alterada: { emoji: "😕", label: "Alterada" },
-  Neutral: { emoji: "😐", label: "Neutral" },
-  Regulada: { emoji: "🙂", label: "Regulada" },
-  "Muy regulada": { emoji: "😄", label: "Muy regulada" },
-};
-
-const ESTADO_EMOCIONAL_VALORES: Record<string, number> = {
-  "Muy alterada": 1,
-  Alterada: 2,
-  Neutral: 3,
-  Regulada: 4,
-  "Muy regulada": 5,
-};
-
-export function getEstadoEmocionalValor(estado: string): number {
-  return ESTADO_EMOCIONAL_VALORES[estado] ?? 3;
-}
-
 export function calcularMejoraSesion(
   estadoInicial: string,
   estadoFinal: string
@@ -159,24 +179,53 @@ function resolveEstudianteId(sesion: Sesion): string {
 }
 
 function normalizeSesion(sesion: Sesion): Sesion {
+  const espacioId =
+    sesion.espacioId ?? resolveSesionEspacioId(sesion.espacio) ?? undefined;
+  const espacio =
+    espacioId !== undefined
+      ? getSesionEspacioNombre(espacioId)
+      : sesion.espacio;
+
+  const evidenciasInstitucionales =
+    sesion.evidenciasInstitucionales ??
+    ([
+      ...(sesion.evidenciaPIE ? (["evidencia_pie"] as const) : []),
+      ...(sesion.evidenciaLeyTEA ? (["evidencia_ley_tea"] as const) : []),
+    ] as EvidenciaInstitucionalId[]);
+
   const normalized: Sesion = {
     ...sesion,
     estudianteId: resolveEstudianteId(sesion),
+    espacio,
+    espacioId,
     interesesObservados: sesion.interesesObservados ?? [],
     contextosExitoObservados: sesion.contextosExitoObservados ?? [],
     estrategiasQueAyudaron: sesion.estrategiasQueAyudaron ?? [],
     barrerasObservadas: sesion.barrerasObservadas ?? [],
+    objetivosTrabajadosIds: sesion.objetivosTrabajadosIds ?? [],
+    apoyosUtilizados: sesion.apoyosUtilizados ?? [],
+    evidenciasInstitucionales,
+    evidenciaPIE:
+      sesion.evidenciaPIE || evidenciasInstitucionales.includes("evidencia_pie"),
+    evidenciaLeyTEA:
+      sesion.evidenciaLeyTEA ||
+      evidenciasInstitucionales.includes("evidencia_ley_tea"),
+    estadoInicial: normalizeEmotionalStateLabel(sesion.estadoInicial),
+    estadoFinal: normalizeEmotionalStateLabel(sesion.estadoFinal),
   };
 
-  if (typeof normalized.mejoraSesion === "number") return normalized;
+  const withMejora =
+    typeof normalized.mejoraSesion === "number"
+      ? normalized
+      : {
+          ...normalized,
+          mejoraSesion: calcularMejoraSesion(
+            normalized.estadoInicial,
+            normalized.estadoFinal
+          ),
+        };
 
-  return {
-    ...normalized,
-    mejoraSesion: calcularMejoraSesion(
-      normalized.estadoInicial,
-      normalized.estadoFinal
-    ),
-  };
+  return withMejora;
 }
 
 export function formatSesionFecha(date: Date = new Date()): string {
@@ -185,6 +234,38 @@ export function formatSesionFecha(date: Date = new Date()): string {
     month: "short",
     year: "numeric",
   });
+}
+
+export function formatSesionHora(date: Date = new Date()): string {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+export function dateInputValueToSesionFecha(value: string): string {
+  if (!value.trim()) return formatSesionFecha();
+
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return formatSesionFecha();
+
+  return formatSesionFecha(new Date(year, month - 1, day));
+}
+
+export function sesionFechaToDateInputValue(fecha: string): string {
+  const match = fecha.match(/^(\d{1,2})\s+([a-záéíóúñ]+)\.?\s+(\d{4})$/i);
+  if (!match) return "";
+
+  const day = Number(match[1]);
+  const monthKey = match[2].slice(0, 3).toLowerCase();
+  const year = Number(match[3]);
+  const month = MESES_ES[monthKey];
+  if (month === undefined) return "";
+
+  const date = new Date(year, month, day);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export function getSesiones(): Sesion[] {
@@ -265,6 +346,92 @@ export function getStoredTableRows(): SesionTableRow[] {
 
 export function getSesionesByEstudianteId(estudianteId: string): Sesion[] {
   return getSesiones().filter((sesion) => sesion.estudianteId === estudianteId);
+}
+
+export function getSesionesByEstudianteIdAndDimension(
+  estudianteId: string,
+  dimension: string
+): Sesion[] {
+  return getSesionesByEstudianteId(estudianteId).filter((sesion) =>
+    sesion.dimensiones.includes(dimension)
+  );
+}
+
+export function getSesionesByIntervencionId(intervencionId: string): Sesion[] {
+  return getSesiones().filter((sesion) => sesion.intervencionId === intervencionId);
+}
+
+export function getSesionesSinIntervencionByEstudianteId(
+  estudianteId: string
+): Sesion[] {
+  return getSesionesByEstudianteId(estudianteId).filter(
+    (sesion) => !sesion.intervencionId
+  );
+}
+
+function persistSesiones(sesiones: Sesion[]): void {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(sesiones.map(normalizeSesion))
+  );
+}
+
+export function updateSesionIntervencionId(
+  sesionId: string,
+  intervencionId: string | undefined,
+  expectedEstudianteId?: string
+): boolean {
+  if (typeof window === "undefined") return false;
+
+  const existing = getSesiones();
+  const index = existing.findIndex((sesion) => sesion.id === sesionId);
+  if (index === -1) return false;
+
+  const current = existing[index];
+  if (
+    expectedEstudianteId &&
+    resolveEstudianteId(current) !== expectedEstudianteId
+  ) {
+    return false;
+  }
+
+  const next = [...existing];
+  next[index] = { ...current, intervencionId };
+  persistSesiones(next);
+  return true;
+}
+
+export function clearIntervencionIdFromSesiones(intervencionId: string): number {
+  if (typeof window === "undefined") return 0;
+
+  const existing = getSesiones();
+  let cleared = 0;
+
+  const next = existing.map((sesion) => {
+    if (sesion.intervencionId !== intervencionId) return sesion;
+
+    cleared += 1;
+    return { ...sesion, intervencionId: undefined };
+  });
+
+  if (cleared > 0) {
+    persistSesiones(next);
+  }
+
+  return cleared;
+}
+
+export function sortSesionesByFecha(
+  sessions: Sesion[],
+  order: "asc" | "desc" = "asc"
+): Sesion[] {
+  return [...sessions].sort((left, right) => {
+    const leftTime = parseSesionFecha(left.fecha)?.getTime() ?? 0;
+    const rightTime = parseSesionFecha(right.fecha)?.getTime() ?? 0;
+    return order === "asc" ? leftTime - rightTime : rightTime - leftTime;
+  });
 }
 
 /** @deprecated Usar getSesionesByEstudianteId */
@@ -426,7 +593,7 @@ export type FichaHeaderKpis = {
 
 const FICHA_HEADER_SIN_DATOS = "Sin datos";
 
-function getMejoraSesionForSesion(sesion: Sesion): number {
+export function getMejoraSesionForSesion(sesion: Sesion): number {
   return (
     sesion.mejoraSesion ??
     calcularMejoraSesion(sesion.estadoInicial, sesion.estadoFinal)
@@ -672,8 +839,7 @@ const INTERES_CON_ARTICULO: Record<string, string> = {
   Deportes: "los deportes",
 };
 
-export const EMPTY_QUIEN_ES_MESSAGE =
-  "Aún no existen suficientes observaciones para construir un perfil personalizado.\n\nRegistra sesiones para comenzar a identificar fortalezas, intereses y contextos de éxito.";
+export const EMPTY_QUIEN_ES_MESSAGE = GLOSSARY.estudiante.vacioQuienEs;
 
 export function hasSesionesForEstudiante(estudianteId: string): boolean {
   return getSesionesByEstudianteId(estudianteId).length > 0;
@@ -732,15 +898,6 @@ export function generateQuienEsResumen(
   return sentences.length > 0 ? sentences.join(" ") : null;
 }
 
-function getEmotionDisplay(label: string): { emoji: string; label: string } {
-  return (
-    EMOTION_DISPLAY[label] ?? {
-      emoji: "😐",
-      label,
-    }
-  );
-}
-
 function isSesion(value: unknown): value is Sesion {
   if (!value || typeof value !== "object") return false;
 
@@ -764,6 +921,22 @@ function isSesion(value: unknown): value is Sesion {
       s.contextosExitoObservados === undefined) &&
     (Array.isArray(s.estrategiasQueAyudaron) ||
       s.estrategiasQueAyudaron === undefined) &&
-    (Array.isArray(s.barrerasObservadas) || s.barrerasObservadas === undefined)
+    (Array.isArray(s.barrerasObservadas) || s.barrerasObservadas === undefined) &&
+    (typeof s.intervencionId === "string" || s.intervencionId === undefined) &&
+    (typeof s.hora === "string" || s.hora === undefined) &&
+    (typeof s.duracionMinutos === "number" || s.duracionMinutos === undefined) &&
+    (typeof s.profesionalId === "string" || s.profesionalId === undefined) &&
+    (typeof s.profesionalNombre === "string" ||
+      s.profesionalNombre === undefined) &&
+    (typeof s.espacioId === "string" || s.espacioId === undefined) &&
+    (Array.isArray(s.objetivosTrabajadosIds) ||
+      s.objetivosTrabajadosIds === undefined) &&
+    (Array.isArray(s.apoyosUtilizados) || s.apoyosUtilizados === undefined) &&
+    (typeof s.nivelParticipacion === "string" ||
+      s.nivelParticipacion === undefined) &&
+    (typeof s.nivelApoyoRequerido === "string" ||
+      s.nivelApoyoRequerido === undefined) &&
+    (Array.isArray(s.evidenciasInstitucionales) ||
+      s.evidenciasInstitucionales === undefined)
   );
 }

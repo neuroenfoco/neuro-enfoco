@@ -1,3 +1,4 @@
+import { deleteIntervencionesByEstudianteId } from "@/lib/intervenciones-storage";
 import { deleteObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
 import { deleteSessionsByEstudianteId } from "@/lib/sessions-storage";
 
@@ -124,6 +125,7 @@ export function deleteEstudiante(estudianteId: string): boolean {
   }
 
   deleteSessionsByEstudianteId(estudianteId);
+  deleteIntervencionesByEstudianteId(estudianteId);
   deleteObjetivosPIEByEstudianteId(estudianteId);
 
   writeEstudiantes(

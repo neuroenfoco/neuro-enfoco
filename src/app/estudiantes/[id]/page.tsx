@@ -1,5 +1,8 @@
 "use client";
 
+import { AppShell } from "@/components/layout/app-shell";
+import { UsersIcon } from "@/components/layout/nav-icons";
+import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   countFortalezasForEstudiante,
   DEFAULT_OBJETIVO_ESTUDIANTE,
@@ -22,11 +25,8 @@ import {
   type LogroReciente,
   type ObjetivoEstudianteResumen,
 } from "@/lib/sessions-storage";
-import {
-  getObjetivosPIEByEstudianteId,
-  getObjetivosPIEResumenByEstudianteId,
-  type ObjetivoPIEResumen,
-} from "@/lib/pie-objectives-storage";
+import { getObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
+import { EstudianteObjetivosTab } from "@/app/estudiantes/[id]/EstudianteObjetivosTab";
 import {
   deleteEstudiante,
   getEstudianteById,
@@ -42,23 +42,17 @@ import type { ComponentType, SVGProps } from "react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
-const navItems = [
-  { label: "Dashboard", href: "/", active: false, icon: LayoutDashboardIcon },
-  { label: "Estudiantes", href: "/estudiantes", active: true, icon: UsersIcon },
-  { label: "Sesiones", href: "/sesiones", active: false, icon: CalendarIcon },
-  { label: "Objetivos", href: "/objetivos", active: false, icon: TargetIcon },
-  { label: "Reportes", href: "#", active: false, icon: ChartIcon },
+const profileTabs = [
+  { id: "objetivos", label: "Objetivos", emoji: "🎯" },
+  { id: "resumen", label: "Resumen", emoji: "👤" },
+  { id: "perfil", label: "Perfil Evolutivo", emoji: "📈" },
+  { id: "sesiones", label: GLOSSARY.intervencion.tabEstudiante, emoji: "📝" },
+  { id: "evidencias", label: "Evidencias", emoji: "📂" },
+  { id: "familia", label: "Familia", emoji: "🏠" },
+  { id: "apoyos", label: "Perfil de Apoyos", emoji: "🤝" },
 ] as const;
 
-const profileTabs = [
-  { id: "resumen", label: "Resumen", emoji: "👤", active: true },
-  { id: "perfil", label: "Perfil Evolutivo", emoji: "📈", active: false },
-  { id: "objetivos", label: "Objetivos", emoji: "🎯", active: false },
-  { id: "sesiones", label: "Sesiones", emoji: "📝", active: false },
-  { id: "evidencias", label: "Evidencias", emoji: "📂", active: false },
-  { id: "familia", label: "Familia", emoji: "🏠", active: false },
-  { id: "apoyos", label: "Perfil de Apoyos", emoji: "🤝", active: false },
-] as const;
+type ProfileTabId = (typeof profileTabs)[number]["id"];
 
 function getNivelBarWidth(nivelActual: string): number {
   switch (nivelActual) {
@@ -82,7 +76,7 @@ const headerKpiConfig = [
   },
   {
     key: "sesionesRegistradas",
-    title: "Sesiones registradas",
+    title: GLOSSARY.intervencion.kpiRegistradas,
     icon: WavesIcon,
     accent: "bg-sky-50 text-sky-700 ring-sky-100",
   },
@@ -157,8 +151,8 @@ export default function EstudianteFichaPage() {
   const [objetivoResumen, setObjetivoResumen] = useState<ObjetivoEstudianteResumen | null>(
     null
   );
-  const [objetivosPIE, setObjetivosPIE] = useState<ObjetivoPIEResumen[]>([]);
   const [whoIsText, setWhoIsText] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTabId>("objetivos");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -228,7 +222,6 @@ export default function EstudianteFichaPage() {
       setObjetivoResumen(
         getObjetivoResumenForEstudiante(studentId, DEFAULT_OBJETIVO_ESTUDIANTE)
       );
-      setObjetivosPIE(getObjetivosPIEResumenByEstudianteId(studentId));
       setWhoIsText(
         generateQuienEsResumen(studentId, primerNombre, strengthNames)
       );
@@ -264,54 +257,8 @@ export default function EstudianteFichaPage() {
   const estudiantePrimerNombre = getEstudiantePrimerNombre(estudiante.nombre);
 
   return (
-    <div className="flex min-h-screen bg-[#f4f7f6] text-slate-800">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-teal-900/5 bg-white">
-        <div className="flex h-[4.25rem] items-center gap-2.5 border-b border-teal-900/5 px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-500 shadow-sm shadow-teal-600/20">
-            <BrainIcon className="h-5 w-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-slate-900">
-              Neuro Enfoco
-            </p>
-            <p className="truncate text-[11px] font-medium text-teal-700/80">
-              Neurobienestar escolar
-            </p>
-          </div>
-        </div>
-
-        <div className="mx-3 mt-4 rounded-xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-emerald-50/50 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-teal-700/70">
-            Enfoque
-          </p>
-          <p className="mt-0.5 text-xs leading-snug text-slate-600">
-            Fortalezas · PIE · Ley TEA · Perfil evolutivo
-          </p>
-        </div>
-
-        <nav className="flex-1 space-y-0.5 px-3 py-4">
-          {navItems.map((item) => (
-            <NavLink key={item.label} {...item} />
-          ))}
-        </nav>
-
-        <div className="border-t border-teal-900/5 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-800">
-              EP
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800">
-                Equipo PIE
-              </p>
-              <p className="truncate text-xs text-slate-500">Colegio Demo</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-h-screen flex-1 flex-col pl-64">
-        <header className="sticky top-0 z-20 border-b border-teal-900/5 bg-[#f4f7f6]/90 px-8 py-4 backdrop-blur-md">
+    <AppShell activeNav="estudiantes">
+      <header className="sticky top-0 z-20 border-b border-teal-900/5 bg-[#f4f7f6]/90 px-8 py-4 backdrop-blur-md">
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <Link href="/estudiantes" className="font-medium text-teal-700 hover:text-teal-800">
             Estudiantes</Link>
@@ -319,17 +266,38 @@ export default function EstudianteFichaPage() {
             <span className="text-slate-700">{estudiante.nombre}</span>
           </div>
           <p className="mt-2 text-xs font-medium uppercase tracking-wide text-teal-700/80">
-            Ficha del estudiante · enfoque basado en fortalezas
+            {GLOSSARY.estudiante.fichaEnfoque}
           </p>
         </header>
 
         <main className="flex-1 px-8 py-8">
           <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200/80 pb-1">
             {profileTabs.map((tab) => (
-              <ProfileTab key={tab.id} {...tab} />
+              <ProfileTab
+                key={tab.id}
+                {...tab}
+                isActive={activeTab === tab.id}
+                onSelect={() => setActiveTab(tab.id)}
+              />
             ))}
           </div>
 
+          {activeTab === "objetivos" && (
+            <EstudianteObjetivosTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab !== "objetivos" && activeTab !== "resumen" && (
+            <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+              <p className="text-sm text-slate-600">
+                Esta sección estará disponible próximamente.
+              </p>
+            </section>
+          )}
+
+          {activeTab === "resumen" && (
           <div className="space-y-8">
             <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -344,7 +312,7 @@ export default function EstudianteFichaPage() {
                     <p className="mt-1 text-base text-slate-600">{estudiante.curso}</p>
                     <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-slate-500">
                       <ClockIcon className="h-4 w-4 text-teal-600/70" />
-                      Ficha actualizada desde sesiones registradas
+                      {GLOSSARY.intervencion.fichaActualizada}
                     </p>
                   </div>
                 </div>
@@ -364,10 +332,10 @@ export default function EstudianteFichaPage() {
 
             <section className="rounded-2xl border-2 border-teal-200/70 bg-gradient-to-br from-teal-50/80 via-white to-emerald-50/40 p-8 shadow-[0_4px_24px_rgba(15,80,60,0.08)] sm:p-10">
               <p className="text-xs font-semibold uppercase tracking-wider text-teal-800/80">
-                ¿Quién es este estudiante?
+                {GLOSSARY.estudiante.quienEsPregunta}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
-                Quién es {estudiantePrimerNombre}
+                {GLOSSARY.estudiante.quienEsTitulo(estudiantePrimerNombre)}
               </h2>
               <p className="mt-5 max-w-3xl whitespace-pre-line text-lg leading-relaxed text-slate-700">
                 {!hasSessions || !whoIsText
@@ -375,8 +343,7 @@ export default function EstudianteFichaPage() {
                   : whoIsText}
               </p>
               <p className="mt-6 text-sm text-slate-500">
-                Esta ficha prioriza identidad, fortalezas y contextos de éxito —
-                no diagnósticos ni antecedentes clínicos.
+                {GLOSSARY.estudiante.quienEsNota}
               </p>
             </section>
 
@@ -503,8 +470,7 @@ export default function EstudianteFichaPage() {
                     Perfil Socioemocional Evolutivo
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Evidencias de sesiones registradas · 7 dimensiones de
-                    desarrollo
+                    {GLOSSARY.intervencion.evidenciasDimensiones}
                   </p>
                 </div>
                 <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
@@ -555,17 +521,15 @@ export default function EstudianteFichaPage() {
                 </ul>
               )}
               <p className="mt-5 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500">
-                El perfil evolutivo integra observaciones de aula, sesiones de
-                regulación y evidencias PIE / Ley TEA para documentar el
-                progreso longitudinal de cada estudiante.
+                {GLOSSARY.intervencion.perfilEvolutivoPie}
               </p>
             </section>
 
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <SectionHeading
-                  title="Lo que suele ayudar"
-                  subtitle="Estrategias y ajustes que facilitan su participación"
+                  title={GLOSSARY.apoyos.suelenFacilitar}
+                  subtitle={GLOSSARY.apoyos.yAjustes}
                 />
                 {hasStrategiesData ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -583,15 +547,15 @@ export default function EstudianteFichaPage() {
                   </div>
                 ) : (
                   <p className="mt-4 text-sm text-slate-500">
-                    Aún no existen estrategias registradas.
+                    {GLOSSARY.apoyos.sinRegistrados}
                   </p>
                 )}
               </section>
 
               <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <SectionHeading
-                  title="Lo que puede dificultar"
-                  subtitle="Aspectos a considerar con respeto y sin juicio"
+                  title={GLOSSARY.barreras.loQuePuedeDificultar}
+                  subtitle={GLOSSARY.barreras.loQuePuedeDificultarSub}
                 />
                 {hasBarriersData ? (
                   <div className="mt-4 grid gap-3">
@@ -609,7 +573,7 @@ export default function EstudianteFichaPage() {
                   </div>
                 ) : (
                   <p className="mt-4 text-sm text-slate-500">
-                    Aún no existen barreras observadas.
+                    {GLOSSARY.barreras.sinObservadas}
                   </p>
                 )}
               </section>
@@ -653,77 +617,19 @@ export default function EstudianteFichaPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-teal-200/60 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-                    Objetivos PIE
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Objetivos formales vinculados a dimensiones observadas en
-                    sesiones
-                  </p>
-                </div>
-                <Link
-                  href={`/objetivos/nuevo?estudianteId=${estudianteId}`}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 transition hover:bg-teal-100"
+            <section className="rounded-2xl border border-violet-100 bg-violet-50/30 p-5">
+              <p className="text-sm text-slate-700">
+                El seguimiento pedagógico completo de objetivos, evidencias y
+                apoyos está en la pestaña{" "}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("objetivos")}
+                  className="font-semibold text-violet-700 underline-offset-2 hover:underline"
                 >
-                  Nuevo objetivo
-                </Link>
-              </div>
-
-              {objetivosPIE.length === 0 ? (
-                <p className="mt-5 text-sm text-slate-500">
-                  Aún no hay objetivos PIE para este estudiante.
-                </p>
-              ) : (
-                <ul className="mt-5 space-y-4">
-                  {objetivosPIE.map((resumen) => (
-                    <li
-                      key={resumen.objetivo.id}
-                      className="rounded-xl border border-slate-100 bg-slate-50/40 p-4"
-                    >
-                      <h3 className="text-base font-semibold text-slate-900">
-                        {resumen.objetivo.nombre}
-                      </h3>
-                      <p className="mt-0.5 text-sm text-violet-700">
-                        {resumen.objetivo.dimensionRelacionada}
-                      </p>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div>
-                          <p className="text-xs text-slate-500">Estado</p>
-                          <p className="text-sm font-medium text-slate-800">
-                            {resumen.estado}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            Impacto promedio
-                          </p>
-                          <p className="text-sm font-medium text-slate-800">
-                            {formatImpactoPromedio(resumen.impactoPromedio)}{" "}
-                            niveles
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500">Evidencias</p>
-                          <p className="text-sm font-medium text-slate-800">
-                            {resumen.cantidadEvidencias}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            Última evidencia
-                          </p>
-                          <p className="text-sm font-medium text-slate-800">
-                            {resumen.ultimaEvidencia}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                  Objetivos
+                </button>
+                .
+              </p>
             </section>
 
             <section className="border-t border-slate-200/80 pt-6">
@@ -743,8 +649,8 @@ export default function EstudianteFichaPage() {
               )}
             </section>
           </div>
+          )}
         </main>
-      </div>
 
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
@@ -770,8 +676,7 @@ export default function EstudianteFichaPage() {
                   ¿Deseas eliminar este estudiante?
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  También se eliminarán todas las sesiones y observaciones
-                  asociadas.
+                  {GLOSSARY.intervencion.eliminarEstudianteAdvertencia}
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-700">
                   Esta acción no puede deshacerse.
@@ -815,7 +720,7 @@ export default function EstudianteFichaPage() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }
 
@@ -837,59 +742,29 @@ function SectionHeading({
 function ProfileTab({
   label,
   emoji,
-  active,
+  isActive,
+  onSelect,
 }: {
   id: string;
   label: string;
   emoji: string;
-  active: boolean;
+  isActive: boolean;
+  onSelect: () => void;
 }) {
   return (
     <button
       type="button"
-      disabled={!active}
-      aria-current={active ? "page" : undefined}
+      onClick={onSelect}
+      aria-current={isActive ? "page" : undefined}
       className={`inline-flex items-center gap-1.5 rounded-t-lg px-3 py-2.5 text-sm font-medium transition ${
-        active
+        isActive
           ? "border-b-2 border-teal-600 bg-white text-teal-900 shadow-sm"
-          : "cursor-not-allowed text-slate-400 opacity-60"
+          : "text-slate-500 hover:bg-white/60 hover:text-slate-800"
       }`}
     >
       <span aria-hidden>{emoji}</span>
       {label}
     </button>
-  );
-}
-
-function NavLink({
-  label,
-  href,
-  active,
-  icon: Icon,
-}: {
-  label: string;
-  href: string;
-  active: boolean;
-  icon: IconComponent;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-        active
-          ? "bg-teal-50 text-teal-900"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-      }`}
-    >
-      <Icon
-        className={`h-[18px] w-[18px] shrink-0 ${
-          active
-            ? "text-teal-700"
-            : "text-slate-400 group-hover:text-teal-600/80"
-        }`}
-      />
-      {label}
-    </Link>
   );
 }
 
@@ -947,121 +822,6 @@ function StrengthPill({
         {count === 1 ? "observación" : "observaciones"}
       </p>
     </div>
-  );
-}
-
-function BrainIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5a3 3 0 1 0-5.5 2.2A4 4 0 0 0 3 12v1a4 4 0 0 0 4 4h1" />
-      <path d="M12 5a3 3 0 1 1 5.5 2.2A4 4 0 0 1 21 12v1a4 4 0 0 1-4 4h-1" />
-      <path d="M12 5v14" />
-      <path d="M9 14h6" />
-    </svg>
-  );
-}
-
-function LayoutDashboardIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="3" width="7" height="9" rx="1" />
-      <rect x="14" y="3" width="7" height="5" rx="1" />
-      <rect x="14" y="12" width="7" height="9" rx="1" />
-      <rect x="3" y="16" width="7" height="5" rx="1" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function TargetIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  );
-}
-
-function ChartIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9M13 17V5M8 17v-3" />
-    </svg>
   );
 }
 
