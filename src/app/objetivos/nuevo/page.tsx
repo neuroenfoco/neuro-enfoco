@@ -1,9 +1,20 @@
 "use client";
 
+import { AppShell } from "@/components/layout/app-shell";
 import {
+  ObjetivoPIEPlanificacionForm,
+  type ObjetivoPIEPlanificacionSubmitInput,
+} from "@/components/objetivos/ObjetivoPIEPlanificacionForm";
+import { GLOSSARY } from "@/lib/copy/glossary";
+import { ROUTES } from "@/lib/copy/navigation";
+import {
+  inputValueToFechaLineaBase,
   PIE_DIMENSION_OPTIONS,
   saveObjetivoPIE,
 } from "@/lib/pie-objectives-storage";
+import { getConclusionEvaluativaById } from "@/lib/evaluacion-integral/conclusion-evaluativa-storage";
+import { linkConclusionesToObjetivo } from "@/lib/evaluacion-integral/vinculo-conclusion-objetivo-storage";
+import { mapConclusionDimensionToObjetivoDimension } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
 import { getEstudiantes } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,160 +22,138 @@ import { useEffect, useState } from "react";
 
 export default function NuevoObjetivoPage() {
   const router = useRouter();
+  const copy = GLOSSARY.objetivo.planificacion;
 
   const [estudiantes, setEstudiantes] = useState(
     () => (typeof window !== "undefined" ? getEstudiantes() : [])
   );
-  const [estudianteId, setEstudianteId] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [dimensionRelacionada, setDimensionRelacionada] = useState<string>(
+  const [preselectedEstudianteId, setPreselectedEstudianteId] = useState("");
+  const [preselectedConclusionIds, setPreselectedConclusionIds] = useState<
+    string[]
+  >([]);
+  const [preselectedEvaluacionId, setPreselectedEvaluacionId] = useState("");
+  const [suggestedDimension, setSuggestedDimension] = useState<string>(
     PIE_DIMENSION_OPTIONS[0]
   );
-  const [descripcion, setDescripcion] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setEstudiantes(getEstudiantes());
 
-    const preselectedEstudianteId = new URLSearchParams(
-      window.location.search
-    ).get("estudianteId");
-    if (preselectedEstudianteId) {
-      setEstudianteId(preselectedEstudianteId);
+    const params = new URLSearchParams(window.location.search);
+    const preselected = params.get("estudianteId");
+    if (preselected) {
+      setPreselectedEstudianteId(preselected);
+    }
+
+    const conclusionId = params.get("conclusionId");
+    const conclusionIdsParam = params.getAll("conclusionIds");
+    const ids = [
+      ...(conclusionId ? [conclusionId] : []),
+      ...conclusionIdsParam,
+    ].filter(Boolean);
+
+    if (ids.length > 0) {
+      setPreselectedConclusionIds(ids);
+      const primera = getConclusionEvaluativaById(ids[0]);
+      if (primera) {
+        setPreselectedEvaluacionId(primera.evaluacionIntegralId);
+        const dimension = mapConclusionDimensionToObjetivoDimension(
+          primera.dimensionId
+        );
+        if (dimension) setSuggestedDimension(dimension);
+      }
     }
   }, []);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isSaving || !estudianteId || !nombre.trim()) return;
+  function handleSubmit(input: ObjetivoPIEPlanificacionSubmitInput) {
+    if (isSaving) return;
 
     setIsSaving(true);
-    saveObjetivoPIE({
-      estudianteId,
-      nombre,
-      dimensionRelacionada,
-      descripcion: descripcion.trim() || undefined,
+    const objetivo = saveObjetivoPIE({
+      estudianteId: input.estudianteId,
+      nombre: input.nombre,
+      dimensionRelacionada: input.dimensionRelacionada,
+      condicionesParticipacionIds: input.condicionesParticipacionIds,
+      condicionParticipacionOtro: input.condicionParticipacionOtro,
+      metaLogro: input.metaLogro,
+      lineaBase: input.lineaBase,
+      fechaLineaBase: inputValueToFechaLineaBase(input.fechaLineaBase ?? ""),
+      descripcion: input.descripcion,
+      desarrolloCatalogoId: input.desarrolloCatalogoId,
+      esDesarrolloPersonalizado: input.esDesarrolloPersonalizado,
+      apoyosPlanificadosIds: input.apoyosPlanificadosIds,
+      apoyoPlanificadoOtro: input.apoyoPlanificadoOtro,
     });
-    router.push("/objetivos");
+
+    if (input.conclusionEvaluativaIds?.length) {
+      linkConclusionesToObjetivo(objetivo.id, input.conclusionEvaluativaIds);
+    }
+
+    router.push(`/objetivos/${objetivo.id}`);
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f4f7f6] text-slate-800">
-      <div className="mx-auto flex w-full max-w-3xl flex-col px-8 py-10">
-        <div className="mb-8">
-          <Link
-            href="/objetivos"
-            className="text-sm font-medium text-teal-700 hover:text-teal-800"
-          >
-            ← Volver a objetivos
-          </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-            Nuevo objetivo PIE
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Las evidencias se generarán automáticamente desde las sesiones que
-            incluyan la dimensión seleccionada.
-          </p>
-        </div>
-
-        {estudiantes.length === 0 ? (
-          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-amber-900">
-            <p>Primero debes registrar al menos un estudiante.</p>
+    <AppShell activeNav="objetivos">
+      <main className="flex-1 px-8 py-10">
+        <div className="mx-auto flex w-full max-w-3xl flex-col">
+          <div className="mb-8">
             <Link
-              href="/estudiantes/nuevo"
-              className="mt-3 inline-flex font-medium text-teal-700 hover:text-teal-800"
+              href={ROUTES.objetivos}
+              className="text-sm font-medium text-teal-700 hover:text-teal-800"
             >
-              Crear estudiante
+              ← Volver a objetivos
             </Link>
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+              {copy.tituloNuevo}
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">{copy.subtitulo}</p>
           </div>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]"
-          >
-            <div className="space-y-5">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Estudiante
-                </span>
-                <select
-                  value={estudianteId}
-                  onChange={(event) => setEstudianteId(event.target.value)}
-                  required
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                >
-                  <option value="" disabled>
-                    Selecciona un estudiante
-                  </option>
-                  {estudiantes.map((estudiante) => (
-                    <option key={estudiante.id} value={estudiante.id}>
-                      {estudiante.nombre} · {estudiante.curso}
-                    </option>
-                  ))}
-                </select>
-              </label>
 
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Nombre del objetivo
-                </span>
-                <input
-                  type="text"
-                  value={nombre}
-                  onChange={(event) => setNombre(event.target.value)}
-                  required
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  placeholder="Ej: Identificación emocional"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Dimensión relacionada
-                </span>
-                <select
-                  value={dimensionRelacionada}
-                  onChange={(event) =>
-                    setDimensionRelacionada(event.target.value)
-                  }
-                  required
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                >
-                  {PIE_DIMENSION_OPTIONS.map((dimension) => (
-                    <option key={dimension} value={dimension}>
-                      {dimension}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Descripción{" "}
-                  <span className="font-normal text-slate-400">(opcional)</span>
-                </span>
-                <textarea
-                  value={descripcion}
-                  onChange={(event) => setDescripcion(event.target.value)}
-                  rows={3}
-                  className="w-full resize-y rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  placeholder="Contexto o foco del objetivo..."
-                />
-              </label>
-            </div>
-
-            <div className="mt-6 flex justify-end border-t border-slate-100 pt-6">
-              <button
-                type="submit"
-                disabled={isSaving || !estudianteId}
-                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          {estudiantes.length === 0 ? (
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-amber-900">
+              <p>Primero debes registrar al menos un estudiante.</p>
+              <Link
+                href="/estudiantes/ingreso"
+                className="mt-3 inline-flex font-medium text-teal-700 hover:text-teal-800"
               >
-                Guardar objetivo
-              </button>
+                Crear estudiante
+              </Link>
             </div>
-          </form>
-        )}
-      </div>
-    </div>
+          ) : (
+            <ObjetivoPIEPlanificacionForm
+              mode="create"
+              estudiantes={estudiantes}
+              initialValues={
+                preselectedEstudianteId
+                  ? {
+                      estudianteId: preselectedEstudianteId,
+                      dimensionRelacionada: suggestedDimension,
+                      desarrolloCatalogoId: "",
+                      esDesarrolloPersonalizado: false,
+                      nombrePersonalizado: "",
+                      lineaBase: "",
+                      fechaLineaBase: "",
+                      metaLogro: "",
+                      condicionesParticipacionIds: [],
+                      condicionParticipacionOtro: "",
+                      apoyosPlanificadosIds: [],
+                      espaciosPlanificadosIds: [],
+                      apoyoPlanificadoOtro: "",
+                      descripcion: "",
+                      evaluacionOrigenId: preselectedEvaluacionId,
+                      conclusionEvaluativaIds: preselectedConclusionIds,
+                    }
+                  : undefined
+              }
+              onSubmit={handleSubmit}
+              cancelHref={ROUTES.objetivos}
+              submitLabel={copy.guardar}
+              isSaving={isSaving}
+            />
+          )}
+        </div>
+      </main>
+    </AppShell>
   );
 }
