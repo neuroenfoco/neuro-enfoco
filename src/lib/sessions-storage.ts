@@ -21,6 +21,7 @@ export {
   getEstadoEmocionalValor,
   normalizeEmotionalStateLabel,
 } from "@/lib/copy/emotional-states";
+import { reconciliarDimensionesSesion } from "@/lib/sesion-impactos-dimensiones";
 import {
   getEstudianteById,
   getEstudiantes,
@@ -37,6 +38,11 @@ export type Sesion = {
   fortalezas: string[];
   logro: string;
   dimensiones: string[];
+  /**
+   * Impactos dimensionales adicionales a los derivados de objetivosTrabajadosIds.
+   * undefined = sesión legacy (dimensiones puede mezclar principal + adicional).
+   */
+  impactosAdicionales?: string[];
   evidenciaPIE: boolean;
   evidenciaLeyTEA: boolean;
   estadoFinal: string;
@@ -64,6 +70,15 @@ export type Sesion = {
   /** Categorías institucionales seleccionadas (extensible). */
   evidenciasInstitucionales?: EvidenciaInstitucionalId[];
 };
+
+export const FORTALEZA_OPTIONS = [
+  "Persistencia",
+  "Empatía",
+  "Creatividad",
+  "Comunicación",
+  "Curiosidad",
+  "Autonomía",
+] as const;
 
 export const INTERES_OPTIONS = [
   "Animales",
@@ -225,7 +240,7 @@ function normalizeSesion(sesion: Sesion): Sesion {
           ),
         };
 
-  return withMejora;
+  return reconciliarDimensionesSesion(withMejora);
 }
 
 export function formatSesionFecha(date: Date = new Date()): string {
@@ -286,6 +301,12 @@ export function getSesiones(): Sesion[] {
 
 export function saveSesion(sesion: Sesion): void {
   if (typeof window === "undefined") return;
+
+  if (!sesion.intervencionId?.trim()) {
+    throw new Error(
+      "Toda evidencia debe vincularse a una intervención mediante intervencionId."
+    );
+  }
 
   const existing = getSesiones();
   const next = [normalizeSesion(sesion), ...existing];
@@ -912,6 +933,8 @@ function isSesion(value: unknown): value is Sesion {
     Array.isArray(s.fortalezas) &&
     typeof s.logro === "string" &&
     Array.isArray(s.dimensiones) &&
+    (Array.isArray(s.impactosAdicionales) ||
+      s.impactosAdicionales === undefined) &&
     typeof s.evidenciaPIE === "boolean" &&
     typeof s.evidenciaLeyTEA === "boolean" &&
     typeof s.estadoFinal === "string" &&

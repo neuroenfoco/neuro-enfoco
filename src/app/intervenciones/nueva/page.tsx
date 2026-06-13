@@ -1,6 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { HallazgoEntradaHibrida } from "@/components/perfil/HallazgoEntradaHibrida";
+import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   getEmotionalStateFormOptions,
@@ -14,12 +16,11 @@ import {
 } from "@/lib/pie-objectives-storage";
 import {
   apoyosSesionToEstrategiasLegacy,
-  CATALOGO_APOYOS_SESION,
+  CATALOGO_APOYOS_SESION_CATEGORIAS,
   CATALOGO_EVIDENCIAS_INSTITUCIONALES,
   CATALOGO_ESPACIOS_SESION,
   CATALOGO_NIVEL_APOYO_REQUERIDO,
   CATALOGO_NIVEL_PARTICIPACION,
-  CATALOGO_PROFESIONALES_SESION,
   DEFAULT_DURACION_MINUTOS,
   DURACION_SESION_PRESETS,
   evidenciasIdsToFlags,
@@ -31,15 +32,35 @@ import {
   type SesionEspacioId,
 } from "@/lib/sesiones-form-catalog";
 import {
-  BARRERA_OPTIONS,
+  formatHallazgoConfirmaciones,
+  getHallazgoOrigenLabel,
+  getHallazgosByEstudianteId,
+  hallazgosToLegacySesionFields,
+  type HallazgoPerfil,
+  type HallazgoTipo,
+} from "@/lib/perfil-hallazgos-storage";
+import {
+  registrarIntervencionConEvidencia,
+  type EvidenciaIntervencionInput,
+} from "@/lib/registrar-intervencion-con-evidencia";
+import {
+  buildDimensionesSesion,
+  getDimensionesPrincipalesFromObjetivoIds,
+  getImpactosAdicionalesDisponibles,
+} from "@/lib/sesion-impactos-dimensiones";
+import {
   calcularMejoraSesion,
-  CONTEXTO_EXITO_OPTIONS,
   dateInputValueToSesionFecha,
   formatSesionHora,
-  INTERES_OPTIONS,
-  saveSesion,
-  type Sesion,
 } from "@/lib/sessions-storage";
+import {
+  formatProfesionalNombreCompleto,
+  getDefaultProfesionalId,
+  getProfesionalRolNombre,
+  getProfesionalesActivos,
+  type Profesional,
+} from "@/lib/institucional/profesionales-storage";
+import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-resolve";
 import {
   getEstudianteIniciales,
   getEstudiantes,
@@ -48,28 +69,9 @@ import {
 } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const emotionalScale = getEmotionalStateFormOptions();
-
-const strengthsOptions = [
-  "Persistencia",
-  "Empatía",
-  "Creatividad",
-  "Comunicación",
-  "Curiosidad",
-  "Autonomía",
-] as const;
-
-const dimensionOptions = [
-  "Regulación emocional",
-  "Interacción social",
-  "Comunicación",
-  "Autonomía",
-  "Participación escolar",
-  "Bienestar percibido",
-  "Fortalezas y talentos",
-] as const;
 
 const defaultAchievement = GLOSSARY.intervencion.logroDefault;
 
@@ -93,8 +95,11 @@ export default function NuevaIntervencionPage() {
   const [fecha, setFecha] = useState(todayInputValue);
   const [hora, setHora] = useState(() => formatSesionHora());
   const [duracionMinutos, setDuracionMinutos] = useState(DEFAULT_DURACION_MINUTOS);
-  const [profesionalId, setProfesionalId] = useState(
-    CATALOGO_PROFESIONALES_SESION[0].id
+  const [profesionalesActivos, setProfesionalesActivos] = useState<
+    Profesional[]
+  >([]);
+  const [profesionalId, setProfesionalId] = useState(() =>
+    getDefaultProfesionalId()
   );
   const [espacioId, setEspacioId] = useState<SesionEspacioId>("sala_multisensorial");
 
@@ -105,13 +110,21 @@ export default function NuevaIntervencionPage() {
 
   const [initialState, setInitialState] = useState<EmotionalStateId>("neutral");
   const [finalState, setFinalState] = useState<EmotionalStateId>("regulada");
-  const [strengths, setStrengths] = useState<string[]>(["Persistencia"]);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [successContexts, setSuccessContexts] = useState<string[]>([]);
-  const [barriers, setBarriers] = useState<string[]>([]);
+  const [hallazgosPerfil, setHallazgosPerfil] = useState<HallazgoPerfil[]>([]);
+  const [selectedHallazgoIds, setSelectedHallazgoIds] = useState<string[]>([]);
 
   const [achievement, setAchievement] = useState<string>(defaultAchievement);
-  const [dimensions, setDimensions] = useState<string[]>(["Regulación emocional"]);
+  const [impactosAdicionales, setImpactosAdicionales] = useState<string[]>([]);
+
+  const dimensionesPrincipales = useMemo(
+    () => getDimensionesPrincipalesFromObjetivoIds(objetivosTrabajadosIds),
+    [objetivosTrabajadosIds]
+  );
+
+  const opcionesImpactosAdicionales = useMemo(
+    () => getImpactosAdicionalesDisponibles(dimensionesPrincipales),
+    [dimensionesPrincipales]
+  );
   const [nivelParticipacion, setNivelParticipacion] =
     useState<NivelParticipacionId>("parcial");
   const [nivelApoyoRequerido, setNivelApoyoRequerido] =
@@ -136,27 +149,65 @@ export default function NuevaIntervencionPage() {
   }, []);
 
   useEffect(() => {
+    const activos = getProfesionalesActivos();
+    setProfesionalesActivos(activos);
+    setProfesionalId((current) =>
+      activos.some((item) => item.id === current)
+        ? current
+        : (activos[0]?.id ?? getDefaultProfesionalId())
+    );
+  }, []);
+
+  useEffect(() => {
     const resumen = getObjetivosPIEResumenByEstudianteId(selectedStudentId);
     setObjetivosActivos(resumen);
     setObjetivosTrabajadosIds((current) =>
       current.filter((id) => resumen.some((item) => item.objetivo.id === id))
     );
+    setHallazgosPerfil(getHallazgosByEstudianteId(selectedStudentId));
+    setSelectedHallazgoIds([]);
   }, [selectedStudentId]);
 
-  function buildSesion(): Sesion {
-    const student = students.find((item) => item.id === selectedStudentId);
-    const profesional = CATALOGO_PROFESIONALES_SESION.find(
-      (item) => item.id === profesionalId
+  useEffect(() => {
+    setImpactosAdicionales((current) =>
+      current.filter((dimension) => !dimensionesPrincipales.includes(dimension))
     );
+  }, [dimensionesPrincipales]);
+
+  function handleHallazgoCreated(hallazgo: HallazgoPerfil) {
+    setHallazgosPerfil((current) => {
+      if (current.some((item) => item.id === hallazgo.id)) return current;
+      return [...current, hallazgo].sort(
+        (left, right) =>
+          left.tipo.localeCompare(right.tipo) ||
+          right.totalObservaciones - left.totalObservaciones ||
+          left.nombre.localeCompare(right.nombre, "es")
+      );
+    });
+    setSelectedHallazgoIds((current) =>
+      current.includes(hallazgo.id) ? current : [...current, hallazgo.id]
+    );
+  }
+
+  function toggleHallazgoId(hallazgoId: string) {
+    setSelectedHallazgoIds((current) =>
+      current.includes(hallazgoId)
+        ? current.filter((id) => id !== hallazgoId)
+        : [...current, hallazgoId]
+    );
+  }
+
+  function buildEvidenciaInput(): EvidenciaIntervencionInput {
+    const student = students.find((item) => item.id === selectedStudentId);
     const evidenciasFlags = evidenciasIdsToFlags(evidencias);
+    const legacyHallazgos = hallazgosToLegacySesionFields(selectedHallazgoIds);
 
     return {
-      id: crypto.randomUUID(),
       fecha: dateInputValueToSesionFecha(fecha),
       hora,
       duracionMinutos,
       profesionalId,
-      profesionalNombre: profesional?.nombre,
+      profesionalNombre: getProfesionalDisplayNombre(profesionalId),
       estudianteId: student?.id ?? selectedStudentId,
       estudiante: student?.nombre ?? "Estudiante",
       espacioId,
@@ -165,12 +216,16 @@ export default function NuevaIntervencionPage() {
       apoyosUtilizados: [...apoyosUtilizados],
       estrategiasQueAyudaron: apoyosSesionToEstrategiasLegacy(apoyosUtilizados),
       estadoInicial: labelFromEmotionalStateId(initialState),
-      fortalezas: [...strengths],
-      interesesObservados: [...interests],
-      contextosExitoObservados: [...successContexts],
-      barrerasObservadas: [...barriers],
+      fortalezas: [...legacyHallazgos.fortalezas],
+      interesesObservados: [...legacyHallazgos.interesesObservados],
+      contextosExitoObservados: [...legacyHallazgos.contextosExitoObservados],
+      barrerasObservadas: [...legacyHallazgos.barrerasObservadas],
       logro: achievement.trim(),
-      dimensiones: [...dimensions],
+      impactosAdicionales: [...impactosAdicionales],
+      dimensiones: buildDimensionesSesion(
+        dimensionesPrincipales,
+        impactosAdicionales
+      ),
       nivelParticipacion,
       nivelApoyoRequerido,
       evidenciasInstitucionales: [...evidencias],
@@ -184,8 +239,18 @@ export default function NuevaIntervencionPage() {
     };
   }
 
-  function persistSession(): void {
-    saveSesion(buildSesion());
+  function persistIntervencionConEvidencia(): boolean {
+    const result = registrarIntervencionConEvidencia({
+      evidencia: buildEvidenciaInput(),
+      hallazgosPresentesIds: selectedHallazgoIds,
+    });
+
+    if (!result.ok) {
+      setSaveMessage(result.error);
+      return false;
+    }
+
+    return true;
   }
 
   function handleSaveAndNavigate(
@@ -193,7 +258,8 @@ export default function NuevaIntervencionPage() {
   ) {
     if (isSaving) return;
 
-    persistSession();
+    if (!persistIntervencionConEvidencia()) return;
+
     setIsSaving(true);
     setSaveMessage(GLOSSARY.intervencion.guardadaOk);
     window.setTimeout(() => {
@@ -357,21 +423,42 @@ export default function NuevaIntervencionPage() {
                 </div>
 
                 <div>
-                  <FieldLabel htmlFor="profesional-sesion">
-                    Profesional responsable
-                  </FieldLabel>
-                  <select
-                    id="profesional-sesion"
-                    value={profesionalId}
-                    onChange={(e) => setProfesionalId(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  >
-                    {CATALOGO_PROFESIONALES_SESION.map((profesional) => (
-                      <option key={profesional.id} value={profesional.id}>
-                        {profesional.nombre} — {profesional.rol}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel htmlFor="profesional-sesion">
+                      {GLOSSARY.profesional.selectorLabel}
+                    </FieldLabel>
+                    <Link
+                      href={ROUTES.profesionales}
+                      className="text-xs font-medium text-teal-700 hover:text-teal-800"
+                    >
+                      {GLOSSARY.profesional.gestionarProfesionales}
+                    </Link>
+                  </div>
+                  {profesionalesActivos.length === 0 ? (
+                    <p className="mt-1.5 text-sm text-amber-800">
+                      {GLOSSARY.profesional.selectorVacio}{" "}
+                      <Link
+                        href={ROUTES.profesionalesNuevo}
+                        className="font-medium text-teal-700 hover:text-teal-800"
+                      >
+                        {GLOSSARY.profesional.nuevo}
+                      </Link>
+                    </p>
+                  ) : (
+                    <select
+                      id="profesional-sesion"
+                      value={profesionalId}
+                      onChange={(e) => setProfesionalId(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                    >
+                      {profesionalesActivos.map((profesional) => (
+                        <option key={profesional.id} value={profesional.id}>
+                          {formatProfesionalNombreCompleto(profesional)} —{" "}
+                          {getProfesionalRolNombre(profesional)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -402,7 +489,7 @@ export default function NuevaIntervencionPage() {
             <FormBlock
               number={2}
               title="Objetivos y apoyos"
-              subtitle="Vincula el trabajo pedagógico con los apoyos que facilitaron la participación"
+              subtitle="Objetivos trabajados y apoyos documentados en esta intervención"
             >
               <div className="space-y-8">
                 <div>
@@ -479,76 +566,123 @@ export default function NuevaIntervencionPage() {
                   <p className="mt-0.5 text-xs text-slate-500">
                     {GLOSSARY.apoyos.utilizadosSubtitulo}
                   </p>
-                  <CheckboxGrid
-                    options={CATALOGO_APOYOS_SESION.map((item) => item.nombre)}
-                    selected={apoyosUtilizados.map(
-                      (id) =>
-                        CATALOGO_APOYOS_SESION.find((item) => item.id === id)
-                          ?.nombre ?? id
-                    )}
-                    onToggle={(nombre) => {
-                      const def = CATALOGO_APOYOS_SESION.find(
-                        (item) => item.nombre === nombre
-                      );
-                      if (!def) return;
-                      toggleItem(def.id, apoyosUtilizados, setApoyosUtilizados);
-                    }}
-                    accent="teal"
-                  />
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    {GLOSSARY.apoyos.utilizadosAyuda}
+                  </p>
+                  <div className="mt-4 space-y-6">
+                    {CATALOGO_APOYOS_SESION_CATEGORIAS.map((categoria) => (
+                      <div key={categoria.id}>
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {categoria.nombre}
+                        </h4>
+                        <CheckboxGrid
+                          className="mt-2"
+                          options={categoria.items.map((item) => item.nombre)}
+                          selected={categoria.items
+                            .filter((item) => apoyosUtilizados.includes(item.id))
+                            .map((item) => item.nombre)}
+                          onToggle={(nombre) => {
+                            const def = categoria.items.find(
+                              (item) => item.nombre === nombre
+                            );
+                            if (!def) return;
+                            toggleItem(
+                              def.id,
+                              apoyosUtilizados,
+                              setApoyosUtilizados
+                            );
+                          }}
+                          accent="teal"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </FormBlock>
 
             <FormBlock
               number={3}
-              title="Observaciones pedagógicas"
-              subtitle="Fortalezas, intereses, contextos de éxito y barreras observadas"
+              title="Perfil pedagógico en la intervención"
+              subtitle="Documenta recursos del estudiante y condiciones de participación observadas hoy"
             >
-              <div className="space-y-6">
-                <SubSection title="Fortalezas observadas">
-                  <CheckboxGrid
-                    options={strengthsOptions}
-                    selected={strengths}
-                    onToggle={(value) => toggleItem(value, strengths, setStrengths)}
-                    accent="teal"
-                  />
-                </SubSection>
+              <div className="space-y-8">
+                <PerfilMarcoTerritorio dimension="perfil_estudiante">
+                  <div className="space-y-6">
+                    <HallazgoPerfilSection
+                      title="Fortalezas presentes hoy"
+                      emptyLabel="Aún no hay fortalezas conocidas para este estudiante."
+                      addLabel="Agregar nueva fortaleza"
+                      tipo="fortaleza"
+                      estudianteId={selectedStudentId}
+                      hallazgos={hallazgosPerfil.filter(
+                        (item) => item.tipo === "fortaleza"
+                      )}
+                      selectedIds={selectedHallazgoIds}
+                      onToggle={toggleHallazgoId}
+                      onHallazgoCreated={handleHallazgoCreated}
+                      accent="teal"
+                    />
+                    <HallazgoPerfilSection
+                      title="Intereses manifestados hoy"
+                      emptyLabel="Aún no hay intereses conocidos para este estudiante."
+                      addLabel="Agregar nuevo interés"
+                      tipo="interes"
+                      estudianteId={selectedStudentId}
+                      hallazgos={hallazgosPerfil.filter(
+                        (item) => item.tipo === "interes"
+                      )}
+                      selectedIds={selectedHallazgoIds}
+                      onToggle={toggleHallazgoId}
+                      onHallazgoCreated={handleHallazgoCreated}
+                      accent="teal"
+                    />
+                  </div>
+                </PerfilMarcoTerritorio>
 
-                <SubSection title="Intereses observados">
-                  <CheckboxGrid
-                    options={INTERES_OPTIONS}
-                    selected={interests}
-                    onToggle={(value) => toggleItem(value, interests, setInterests)}
-                    accent="teal"
-                  />
-                </SubSection>
-
-                <SubSection title="Contextos de éxito observados">
-                  <CheckboxGrid
-                    options={CONTEXTO_EXITO_OPTIONS}
-                    selected={successContexts}
-                    onToggle={(value) =>
-                      toggleItem(value, successContexts, setSuccessContexts)
-                    }
-                    accent="teal"
-                  />
-                </SubSection>
-
-                <SubSection title={GLOSSARY.barreras.observadas}>
-                  <CheckboxGrid
-                    options={BARRERA_OPTIONS}
-                    selected={barriers}
-                    onToggle={(value) => toggleItem(value, barriers, setBarriers)}
-                    accent="amber"
-                  />
-                </SubSection>
+                <PerfilMarcoTerritorio
+                  dimension="perfil_participacion"
+                  showAviso
+                  avisoVariant="condicionIntervencion"
+                >
+                  <div className="space-y-6">
+                    <HallazgoPerfilSection
+                      title="Contextos de éxito presentes hoy"
+                      emptyLabel="Aún no hay contextos de éxito conocidos para este estudiante."
+                      addLabel="Agregar nuevo contexto de éxito"
+                      tipo="contexto_exito"
+                      estudianteId={selectedStudentId}
+                      hallazgos={hallazgosPerfil.filter(
+                        (item) => item.tipo === "contexto_exito"
+                      )}
+                      selectedIds={selectedHallazgoIds}
+                      onToggle={toggleHallazgoId}
+                      onHallazgoCreated={handleHallazgoCreated}
+                      accent="teal"
+                    />
+                    <HallazgoPerfilSection
+                      title={GLOSSARY.marco.condicionesParticipacion.tituloHoy}
+                      emptyLabel="Aún no hay condiciones de participación conocidas para este estudiante."
+                      addLabel={GLOSSARY.marco.condicionesParticipacion.agregar}
+                      tipo="barrera"
+                      estudianteId={selectedStudentId}
+                      hallazgos={hallazgosPerfil.filter(
+                        (item) => item.tipo === "barrera"
+                      )}
+                      selectedIds={selectedHallazgoIds}
+                      onToggle={toggleHallazgoId}
+                      onHallazgoCreated={handleHallazgoCreated}
+                      accent="amber"
+                    />
+                  </div>
+                </PerfilMarcoTerritorio>
               </div>
             </FormBlock>
 
             <FormBlock
               number={4}
               title="Resultados"
-              subtitle="Estados emocionales, logro, participación y dimensiones impactadas"
+              subtitle={GLOSSARY.intervencion.resultadosSubtitulo}
             >
               <div className="space-y-6">
                 <SubSection
@@ -607,13 +741,61 @@ export default function NuevaIntervencionPage() {
                   />
                 </SubSection>
 
-                <SubSection title="Dimensiones impactadas">
-                  <CheckboxGrid
-                    options={dimensionOptions}
-                    selected={dimensions}
-                    onToggle={(value) => toggleItem(value, dimensions, setDimensions)}
-                    accent="violet"
-                  />
+                <SubSection
+                  title={GLOSSARY.intervencion.dimensionesPrincipalesTitulo}
+                  hint={GLOSSARY.intervencion.dimensionesPrincipalesHint}
+                >
+                  {dimensionesPrincipales.length === 0 ? (
+                    <p className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-600">
+                      {GLOSSARY.intervencion.dimensionesPrincipalesVacias}
+                    </p>
+                  ) : (
+                    <ul className="mt-3 space-y-2">
+                      {dimensionesPrincipales.map((dimension) => (
+                        <li
+                          key={dimension}
+                          className="flex items-center gap-2 rounded-xl border border-violet-200/80 bg-violet-50/50 px-4 py-2.5 text-sm font-medium text-violet-950"
+                        >
+                          <span
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-xs text-white"
+                            aria-hidden
+                          >
+                            ✓
+                          </span>
+                          {dimension}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </SubSection>
+
+                <SubSection
+                  title={GLOSSARY.intervencion.impactosAdicionalesTitulo}
+                  hint={GLOSSARY.intervencion.impactosAdicionalesHint}
+                >
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    {GLOSSARY.intervencion.impactosAdicionalesAyuda}
+                  </p>
+                  {opcionesImpactosAdicionales.length === 0 ? (
+                    <p className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-600">
+                      {GLOSSARY.intervencion.impactosAdicionalesSinOpciones}
+                    </p>
+                  ) : (
+                    <div className="mt-4">
+                      <CheckboxGrid
+                        options={opcionesImpactosAdicionales}
+                        selected={impactosAdicionales}
+                        onToggle={(value) =>
+                          toggleItem(
+                            value,
+                            impactosAdicionales,
+                            setImpactosAdicionales
+                          )
+                        }
+                        accent="violet"
+                      />
+                    </div>
+                  )}
                 </SubSection>
               </div>
             </FormBlock>
@@ -799,16 +981,112 @@ function EmotionalScale({
   );
 }
 
+function HallazgoPerfilSection({
+  title,
+  emptyLabel,
+  addLabel,
+  tipo,
+  estudianteId,
+  hallazgos,
+  selectedIds,
+  onToggle,
+  onHallazgoCreated,
+  accent,
+}: {
+  title: string;
+  emptyLabel: string;
+  addLabel: string;
+  tipo: HallazgoTipo;
+  estudianteId: string;
+  hallazgos: HallazgoPerfil[];
+  selectedIds: string[];
+  onToggle: (hallazgoId: string) => void;
+  onHallazgoCreated: (hallazgo: HallazgoPerfil) => void;
+  accent: "teal" | "amber";
+}) {
+  const [isAdding, setIsAdding] = useState(false);
+
+  const activeStyles =
+    accent === "amber"
+      ? "border-amber-300 bg-amber-50 text-amber-900"
+      : "border-teal-300 bg-teal-50 text-teal-900";
+
+  return (
+    <SubSection title={title}>
+      {hallazgos.length === 0 ? (
+        <p className="text-sm text-slate-500">{emptyLabel}</p>
+      ) : (
+        <ul className="space-y-2">
+          {hallazgos.map((hallazgo) => {
+            const checked = selectedIds.includes(hallazgo.id);
+            return (
+              <li key={hallazgo.id}>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
+                    checked
+                      ? activeStyles
+                      : "border-slate-200/80 bg-slate-50/30 hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggle(hallazgo.id)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500/30"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-slate-800">
+                      {hallazgo.nombre}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-600">
+                      Origen: {getHallazgoOrigenLabel(hallazgo.origen)}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      {formatHallazgoConfirmaciones(hallazgo.totalObservaciones)}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {isAdding ? (
+        <HallazgoEntradaHibrida
+          estudianteId={estudianteId}
+          tipo={tipo}
+          accent={accent}
+          origen="intervencion"
+          onHallazgoCreated={onHallazgoCreated}
+          onAdded={() => setIsAdding(false)}
+          onCancel={() => setIsAdding(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsAdding(true)}
+          className="mt-3 text-sm font-semibold text-teal-700 transition hover:text-teal-800"
+        >
+          ➕ {addLabel}
+        </button>
+      )}
+    </SubSection>
+  );
+}
+
 function CheckboxGrid({
   options,
   selected,
   onToggle,
   accent,
+  className,
 }: {
   options: readonly string[];
   selected: string[];
   onToggle: (value: string) => void;
   accent: "teal" | "violet" | "amber";
+  className?: string;
 }) {
   const activeStyles = {
     teal: "border-teal-300 bg-teal-50 text-teal-900",
@@ -817,7 +1095,7 @@ function CheckboxGrid({
   }[accent];
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className={`grid gap-2 sm:grid-cols-2${className ? ` ${className}` : ""}`}>
       {options.map((option) => {
         const checked = selected.includes(option);
         return (

@@ -1,4 +1,11 @@
 export { GLOSSARY, type Glossary } from "@/lib/copy/glossary";
+export {
+  getHallazgoDimension,
+  getHallazgoDimensionLabel,
+  getHallazgoTipoLabel,
+  isHallazgoPerfilParticipacion,
+  type HallazgoDimension,
+} from "@/lib/hallazgo-labels";
 export { CATALOG_COPY } from "@/lib/copy/catalogos";
 export {
   ROUTES,

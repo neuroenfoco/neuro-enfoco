@@ -3,8 +3,8 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
+import { eliminarIntervencionPorEvidenciaId } from "@/lib/intervenciones-storage";
 import {
-  deleteSession,
   getStoredTableRows,
   isStoredSessionId,
   type SesionTableRow,
@@ -47,7 +47,7 @@ export default function IntervencionesPage() {
     if (!pendingDeleteId || !canConfirmDelete) return;
 
     setIsDeleting(true);
-    const deleted = deleteSession(pendingDeleteId);
+    const deleted = eliminarIntervencionPorEvidenciaId(pendingDeleteId);
     setPendingDeleteId(null);
     setDeleteConfirmText("");
     setIsDeleting(false);
@@ -71,13 +71,21 @@ export default function IntervencionesPage() {
               {GLOSSARY.intervencion.historialSubtitulo}
             </p>
           </div>
-          <Link
-            href={ROUTES.intervencionesNueva}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
-          >
-            <PlusIcon className="h-4 w-4" />
-            {GLOSSARY.intervencion.nueva}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={ROUTES.profesionales}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {GLOSSARY.profesional.gestionarProfesionales}
+            </Link>
+            <Link
+              href={ROUTES.intervencionesNueva}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
+            >
+              <PlusIcon className="h-4 w-4" />
+              {GLOSSARY.intervencion.nueva}
+            </Link>
+          </div>
         </div>
       </header>
 

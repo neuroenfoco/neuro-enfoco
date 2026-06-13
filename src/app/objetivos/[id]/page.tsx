@@ -3,13 +3,9 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
-import {
-  deleteApoyoImplementado,
-  formatApoyoFechaDisplay,
-  inputValueToApoyoFecha,
-  saveApoyoImplementado,
-  type ApoyoImplementado,
-} from "@/lib/pie-apoyos-storage";
+import { ApoyoImplementadoOpcionalSection } from "@/components/objetivos/ApoyoImplementadoOpcionalSection";
+import { ApoyosConsolidadosSection } from "@/components/objetivos/ApoyosConsolidadosSection";
+import { getApoyosConsolidadosPorObjetivo } from "@/lib/apoyos-consolidados-objetivo";
 import {
   formatImpactoPromedio,
   getBarreraDetectadaDisplay,
@@ -18,6 +14,7 @@ import {
   getObjetivoPIEDetalle,
   type ObjetivoPIEDetalle,
 } from "@/lib/pie-objectives-storage";
+import { enrichObjetivoPIEResumen } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -25,20 +22,29 @@ import { useEffect, useState } from "react";
 export default function ObjetivoPIEDetallePage() {
   const params = useParams<{ id: string }>();
   const objetivoId = params.id;
-  const [detalle, setDetalle] = useState<ObjetivoPIEDetalle | null>(() =>
-    typeof window === "undefined" ? null : getObjetivoPIEDetalle(objetivoId)
-  );
-  const [apoyoNombre, setApoyoNombre] = useState("");
-  const [apoyoDescripcion, setApoyoDescripcion] = useState("");
-  const [apoyoFechaInicio, setApoyoFechaInicio] = useState("");
-  const [apoyoFechaTermino, setApoyoFechaTermino] = useState("");
-  const [isSavingApoyo, setIsSavingApoyo] = useState(false);
-  const [pendingDeleteApoyoId, setPendingDeleteApoyoId] = useState<string | null>(
-    null
+  const [detalle, setDetalle] = useState<ObjetivoPIEDetalle | null>(() => {
+    if (typeof window === "undefined") return null;
+    const base = getObjetivoPIEDetalle(objetivoId);
+    if (!base) return null;
+    return { ...base, resumen: enrichObjetivoPIEResumen(base.resumen) };
+  });
+  const [consolidados, setConsolidados] = useState(() =>
+    typeof window === "undefined"
+      ? null
+      : getApoyosConsolidadosPorObjetivo(objetivoId)
   );
 
   function refreshDetalle() {
-    setDetalle(getObjetivoPIEDetalle(objetivoId));
+    const base = getObjetivoPIEDetalle(objetivoId);
+    if (base) {
+      setDetalle({
+        ...base,
+        resumen: enrichObjetivoPIEResumen(base.resumen),
+      });
+    } else {
+      setDetalle(null);
+    }
+    setConsolidados(getApoyosConsolidadosPorObjetivo(objetivoId));
   }
 
   useEffect(() => {
@@ -52,44 +58,7 @@ export default function ObjetivoPIEDetallePage() {
     };
   }, [objetivoId]);
 
-  function handleAddApoyo(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (
-      isSavingApoyo ||
-      !apoyoNombre.trim() ||
-      !apoyoDescripcion.trim() ||
-      !apoyoFechaInicio.trim()
-    ) {
-      return;
-    }
-
-    setIsSavingApoyo(true);
-    saveApoyoImplementado({
-      objetivoId,
-      nombre: apoyoNombre,
-      descripcion: apoyoDescripcion,
-      fechaInicio: inputValueToApoyoFecha(apoyoFechaInicio),
-      fechaTermino: apoyoFechaTermino.trim()
-        ? inputValueToApoyoFecha(apoyoFechaTermino)
-        : undefined,
-    });
-    setApoyoNombre("");
-    setApoyoDescripcion("");
-    setApoyoFechaInicio("");
-    setApoyoFechaTermino("");
-    setIsSavingApoyo(false);
-    refreshDetalle();
-  }
-
-  function handleConfirmDeleteApoyo() {
-    if (!pendingDeleteApoyoId) return;
-
-    deleteApoyoImplementado(pendingDeleteApoyoId);
-    setPendingDeleteApoyoId(null);
-    refreshDetalle();
-  }
-
-  if (!detalle) {
+  if (!detalle || !consolidados) {
     return (
       <AppShell activeNav="objetivos">
         <main className="flex flex-1 items-center justify-center px-8 py-10 text-slate-600">
@@ -144,6 +113,35 @@ export default function ObjetivoPIEDetallePage() {
           <p className="mt-3 text-base leading-relaxed text-slate-800">
             {getBarreraDetectadaDisplay(objetivo)}
           </p>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50/30 to-white p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-800/80">
+            {GLOSSARY.planificacionEvaluativa.trazabilidadTitulo}
+          </p>
+          {!resumen.tieneTrazabilidadEvaluativa ? (
+            <p className="mt-3 text-sm text-slate-600">
+              {GLOSSARY.planificacionEvaluativa.sinTrazabilidad}
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {resumen.conclusionesSustentantes.map((conclusion) => (
+                <li
+                  key={conclusion.id}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <p className="font-medium text-slate-900">
+                    {conclusion.prioridadLabel}
+                  </p>
+                  <p className="mt-1 text-slate-700">{conclusion.enunciado}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {conclusion.evaluacionTipoLabel} ·{" "}
+                    {conclusion.evaluacionFechaReferencia}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <header className="mt-8 rounded-2xl border border-violet-200/50 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
@@ -216,154 +214,13 @@ export default function ObjetivoPIEDetallePage() {
           </p>
         </section>
 
-        <section className="mt-8 rounded-2xl border border-teal-200/60 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">
-                Apoyos implementados
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Registro de apoyos vinculados al objetivo para seguimiento y
-                análisis futuro.
-              </p>
-            </div>
-            <span className="inline-flex rounded-lg bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800">
-              {apoyos.activos.length} activos · {apoyos.historico.length}{" "}
-              históricos
-            </span>
-          </div>
+        <ApoyosConsolidadosSection consolidados={consolidados} />
 
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-teal-800/80">
-              Apoyos activos
-            </h3>
-            {apoyos.activos.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-500">
-                No hay apoyos activos registrados.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {apoyos.activos.map((apoyo) => (
-                  <ApoyoCard
-                    key={apoyo.id}
-                    apoyo={apoyo}
-                    activo
-                    onDelete={() => setPendingDeleteApoyoId(apoyo.id)}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="mt-8 border-t border-slate-100 pt-8">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Histórico de apoyos
-            </h3>
-            {apoyos.historico.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-500">
-                Aún no hay apoyos finalizados.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {apoyos.historico.map((apoyo) => (
-                  <ApoyoCard
-                    key={apoyo.id}
-                    apoyo={apoyo}
-                    onDelete={() => setPendingDeleteApoyoId(apoyo.id)}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <form
-            onSubmit={handleAddApoyo}
-            className="mt-8 rounded-xl border border-teal-100 bg-teal-50/30 p-4"
-          >
-            <p className="text-sm font-medium text-slate-800">
-              Agregar apoyo implementado
-            </p>
-            <div className="mt-4 space-y-4">
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Nombre del apoyo
-                </span>
-                <input
-                  type="text"
-                  value={apoyoNombre}
-                  onChange={(event) => setApoyoNombre(event.target.value)}
-                  required
-                  list="apoyo-sugerencias"
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  placeholder="Ej: Agenda visual"
-                />
-                <datalist id="apoyo-sugerencias">
-                  <option value="Agenda visual" />
-                  <option value="Pictogramas" />
-                  <option value="Temporizador visual" />
-                  <option value="Espacio de regulación" />
-                  <option value="Compañero tutor" />
-                  <option value="Historias sociales" />
-                </datalist>
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-slate-700">
-                  Descripción
-                </span>
-                <textarea
-                  value={apoyoDescripcion}
-                  onChange={(event) => setApoyoDescripcion(event.target.value)}
-                  required
-                  rows={2}
-                  className="w-full resize-y rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  placeholder="Cómo se implementa el apoyo en el contexto del objetivo"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-slate-700">
-                    Fecha de inicio
-                  </span>
-                  <input
-                    type="date"
-                    value={apoyoFechaInicio}
-                    onChange={(event) => setApoyoFechaInicio(event.target.value)}
-                    required
-                    className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-slate-700">
-                    Fecha de término{" "}
-                    <span className="font-normal text-slate-400">(opcional)</span>
-                  </span>
-                  <input
-                    type="date"
-                    value={apoyoFechaTermino}
-                    onChange={(event) =>
-                      setApoyoFechaTermino(event.target.value)
-                    }
-                    className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                type="submit"
-                disabled={
-                  isSavingApoyo ||
-                  !apoyoNombre.trim() ||
-                  !apoyoDescripcion.trim() ||
-                  !apoyoFechaInicio.trim()
-                }
-                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Agregar apoyo
-              </button>
-            </div>
-          </form>
-        </section>
+        <ApoyoImplementadoOpcionalSection
+          objetivoId={objetivoId}
+          apoyos={apoyos}
+          onRefresh={refreshDetalle}
+        />
 
         <section className="mt-8 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
           <h2 className="text-sm font-semibold text-slate-900">
@@ -486,87 +343,7 @@ export default function ObjetivoPIEDetallePage() {
         </div>
       </main>
 
-      {pendingDeleteApoyoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-          <div
-            className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-apoyo-dialog-title"
-          >
-            <h2
-              id="delete-apoyo-dialog-title"
-              className="text-base font-semibold text-slate-900"
-            >
-              ¿Eliminar este apoyo?
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {GLOSSARY.intervencion.apoyosNoModifican}
-            </p>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setPendingDeleteApoyoId(null)}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteApoyo}
-                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppShell>
-  );
-}
-
-function ApoyoCard({
-  apoyo,
-  activo = false,
-  onDelete,
-}: {
-  apoyo: ApoyoImplementado;
-  activo?: boolean;
-  onDelete: () => void;
-}) {
-  return (
-    <li className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-slate-900">{apoyo.nombre}</p>
-            {activo && (
-              <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-800">
-                Activo
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            {apoyo.descripcion}
-          </p>
-          <p className="mt-2 text-xs text-slate-500">
-            Inicio: {formatApoyoFechaDisplay(apoyo.fechaInicio)}
-            {apoyo.fechaTermino
-              ? ` · Término: ${formatApoyoFechaDisplay(apoyo.fechaTermino)}`
-              : " · Sin fecha de término"}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200/80 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-        >
-          <span aria-hidden>🗑</span>
-          Eliminar
-        </button>
-      </div>
-    </li>
   );
 }
 

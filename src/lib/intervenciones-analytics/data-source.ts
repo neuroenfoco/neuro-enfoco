@@ -2,14 +2,13 @@ import { getEspacioById } from "@/lib/espacios-storage";
 import type { TipoIntervencionId } from "@/lib/intervenciones-catalog";
 import { getObjetivoPIEById } from "@/lib/pie-objectives-storage";
 import { getSesionesByIntervencionId } from "@/lib/sessions-storage";
+import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-resolve";
 import { getEstudianteById } from "@/lib/students-storage";
 import type {
   IntervencionesAnalyticsFiltros,
   IntervencionesAnalyticsInput,
   IntervencionesAnalyticsIntervencion,
 } from "@/lib/intervenciones-analytics/types";
-
-const PROFESIONAL_LOCAL_ID = "profesional-local";
 
 export type IntervencionAnalyticsSource = {
   id: string;
@@ -35,10 +34,7 @@ function intervencionToAnalyticsItem(
     estudianteId: intervencion.estudianteId,
     estudianteNombre: estudiante?.nombre,
     profesionalId: intervencion.profesionalId,
-    profesionalNombre:
-      intervencion.profesionalId === PROFESIONAL_LOCAL_ID
-        ? "Profesional local"
-        : intervencion.profesionalId,
+    profesionalNombre: getProfesionalDisplayNombre(intervencion.profesionalId),
     fecha: intervencion.fecha,
     tipoIntervencion: intervencion.tipoIntervencion,
     espacioId: intervencion.espacioId,

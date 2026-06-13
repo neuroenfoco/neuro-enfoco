@@ -1,7 +1,10 @@
 "use client";
 
 import { GLOSSARY } from "@/lib/copy/glossary";
-import { formatApoyoFechaDisplay } from "@/lib/pie-apoyos-storage";
+import {
+  getApoyosConsolidadosPorObjetivo,
+  getResumenBreveApoyosConsolidados,
+} from "@/lib/apoyos-consolidados-objetivo";
 import {
   formatInsightResumen,
   getEstudianteObjetivosFicha,
@@ -143,10 +146,14 @@ export function EstudianteObjetivosTab({
 
 function ObjetivoSeguimientoCard({ item }: { item: ObjetivoPIEFichaItem }) {
   const { detalle, insightsListos, indicadoresListos } = item;
-  const { resumen, apoyos, fortalezasMasObservadas, evidenciasTimeline, metaLogroSeguimiento } =
+  const { resumen, fortalezasMasObservadas, evidenciasTimeline, metaLogroSeguimiento } =
     detalle;
   const { objetivo, estado, cantidadEvidencias, impactoPromedio, ultimaEvidencia } =
     resumen;
+  const apoyosConsolidados = getApoyosConsolidadosPorObjetivo(objetivo.id);
+  const apoyosResumen = apoyosConsolidados
+    ? getResumenBreveApoyosConsolidados(apoyosConsolidados)
+    : null;
   const pedagogia = getObjetivoPedagogiaDisplay(objetivo);
   const evidenciasRecientes = evidenciasTimeline.slice(-3).reverse();
 
@@ -207,31 +214,44 @@ function ObjetivoSeguimientoCard({ item }: { item: ObjetivoPIEFichaItem }) {
 
       <div className="grid gap-6 border-t border-slate-100 p-6 sm:p-8 lg:grid-cols-2">
         <div>
-          <h4 className="text-sm font-semibold text-slate-900">Apoyos implementados</h4>
-          <p className="mt-1 text-xs text-slate-500">
-            {apoyos.activos.length} activos · {apoyos.historico.length} históricos
-          </p>
-          {apoyos.activos.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-500">Sin apoyos activos.</p>
+          <h4 className="text-sm font-semibold text-slate-900">
+            Apoyos de participación
+          </h4>
+          {apoyosResumen ? (
+            <>
+              <p className="mt-1 text-xs text-slate-500">{apoyosResumen.texto}</p>
+              {apoyosResumen.apoyosFrecuentes.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {apoyosResumen.apoyosFrecuentes.map((apoyo) => (
+                    <li
+                      key={apoyo.nombre}
+                      className="rounded-lg border border-teal-100 bg-teal-50/30 px-3 py-2.5"
+                    >
+                      <p className="text-sm font-medium text-slate-800">
+                        {apoyo.nombre}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {apoyo.intervencionesCount} intervención
+                        {apoyo.intervencionesCount === 1 ? "" : "es"}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-slate-500">
+                  Sin apoyos documentados en intervenciones vinculadas.
+                </p>
+              )}
+              <Link
+                href={`/objetivos/${objetivo.id}#apoyos`}
+                className="mt-3 inline-flex text-xs font-semibold text-teal-700 hover:text-teal-800"
+              >
+                Ver detalle de apoyos →
+              </Link>
+            </>
           ) : (
-            <ul className="mt-3 space-y-2">
-              {apoyos.activos.map((apoyo) => (
-                <li
-                  key={apoyo.id}
-                  className="rounded-lg border border-teal-100 bg-teal-50/30 px-3 py-2.5"
-                >
-                  <p className="text-sm font-medium text-slate-800">{apoyo.nombre}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    Desde {formatApoyoFechaDisplay(apoyo.fechaInicio)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-          {apoyos.historico.length > 0 && (
-            <p className="mt-3 text-xs text-slate-500">
-              + {apoyos.historico.length} apoyo
-              {apoyos.historico.length === 1 ? "" : "s"} en histórico
+            <p className="mt-3 text-sm text-slate-500">
+              Sin información de apoyos consolidados.
             </p>
           )}
         </div>

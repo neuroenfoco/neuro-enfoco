@@ -47,12 +47,32 @@ export type ApoyoSesionId =
   | "instrucciones_visuales"
   | "anticipacion_verbal"
   | "tiempo_transicion"
+  | "temporizador_visual"
+  | "secuencia_visual"
+  | "apoyo_visual_personalizado"
   | "actividad_estructurada"
+  | "actividad_basada_intereses"
+  | "modelado"
   | "companero_tutor"
   | "refuerzo_positivo"
-  | "tecnologia_apoyo"
   | "apoyo_individual"
-  | "pausa_regulacion";
+  | "pausa_regulacion"
+  | "ajustes_sensoriales"
+  | "tecnologia_apoyo";
+
+/** Clasificación interna para analíticas futuras; no se muestra en UI. */
+export type ApoyoSesionNaturaleza =
+  | "apoyo_acceso"
+  | "apoyo_humano"
+  | "mediacion"
+  | "regulacion";
+
+export type ApoyoSesionCategoriaId =
+  | "anticipacion_rutina_tiempo"
+  | "visuales_comprension"
+  | "diseno_actividad_mediacion"
+  | "apoyo_humano"
+  | "regulacion_entorno_acceso";
 
 export type ApoyoSesionDef = {
   id: ApoyoSesionId;
@@ -60,75 +80,175 @@ export type ApoyoSesionDef = {
   /** Etiqueta en estrategiasQueAyudaron para compatibilidad con sesiones previas. */
   etiquetaEstrategiaLegacy?: string;
   orden: number;
+  /** Metadata interna; no visible al usuario. */
+  naturaleza?: ApoyoSesionNaturaleza;
 };
 
-export const CATALOGO_APOYOS_SESION: readonly ApoyoSesionDef[] = [
-  {
-    id: "agenda_visual",
-    nombre: "Agenda visual",
-    orden: 10,
-  },
-  {
-    id: "pictogramas",
-    nombre: "Pictogramas",
-    orden: 20,
-  },
-  {
-    id: "instrucciones_visuales",
-    nombre: "Instrucciones visuales",
-    etiquetaEstrategiaLegacy: "Instrucciones visuales",
-    orden: 30,
-  },
-  {
-    id: "anticipacion_verbal",
-    nombre: "Anticipación verbal",
-    etiquetaEstrategiaLegacy: "Anticipar cambios",
-    orden: 40,
-  },
-  {
-    id: "tiempo_transicion",
-    nombre: "Tiempo de transición",
-    etiquetaEstrategiaLegacy: "Tiempo de transición",
-    orden: 50,
-  },
-  {
-    id: "actividad_estructurada",
-    nombre: "Actividad estructurada",
-    etiquetaEstrategiaLegacy: "Actividades estructuradas",
-    orden: 60,
-  },
-  {
-    id: "companero_tutor",
-    nombre: "Compañero tutor",
-    orden: 70,
-  },
-  {
-    id: "refuerzo_positivo",
-    nombre: "Refuerzo positivo",
-    etiquetaEstrategiaLegacy: "Refuerzo positivo",
-    orden: 80,
-  },
-  {
-    id: "tecnologia_apoyo",
-    nombre: "Tecnología de apoyo",
-    orden: 90,
-  },
-  {
-    id: "apoyo_individual",
-    nombre: "Apoyo individual",
-    etiquetaEstrategiaLegacy: "Apoyo individual",
-    orden: 100,
-  },
-  {
-    id: "pausa_regulacion",
-    nombre: "Pausa de regulación",
-    etiquetaEstrategiaLegacy: "Pausas programadas",
-    orden: 110,
-  },
-] as const;
+export type ApoyoSesionCategoria = {
+  id: ApoyoSesionCategoriaId;
+  nombre: string;
+  items: readonly ApoyoSesionDef[];
+};
+
+export const CATALOGO_APOYOS_SESION_CATEGORIAS: readonly ApoyoSesionCategoria[] =
+  [
+    {
+      id: "anticipacion_rutina_tiempo",
+      nombre: "Anticipación, rutina y tiempo",
+      items: [
+        {
+          id: "agenda_visual",
+          nombre: "Agenda visual",
+          orden: 10,
+          naturaleza: "apoyo_acceso",
+        },
+        {
+          id: "anticipacion_verbal",
+          nombre: "Anticipación verbal",
+          etiquetaEstrategiaLegacy: "Anticipar cambios",
+          orden: 20,
+          naturaleza: "mediacion",
+        },
+        {
+          id: "tiempo_transicion",
+          nombre: "Tiempo de transición",
+          etiquetaEstrategiaLegacy: "Tiempo de transición",
+          orden: 30,
+          naturaleza: "apoyo_acceso",
+        },
+        {
+          id: "temporizador_visual",
+          nombre: "Temporizador visual",
+          etiquetaEstrategiaLegacy: "Temporizador visual",
+          orden: 40,
+          naturaleza: "apoyo_acceso",
+        },
+      ],
+    },
+    {
+      id: "visuales_comprension",
+      nombre: "Apoyos visuales y comprensión",
+      items: [
+        {
+          id: "pictogramas",
+          nombre: "Pictogramas",
+          orden: 50,
+          naturaleza: "apoyo_acceso",
+        },
+        {
+          id: "instrucciones_visuales",
+          nombre: "Instrucciones visuales",
+          etiquetaEstrategiaLegacy: "Instrucciones visuales",
+          orden: 60,
+          naturaleza: "apoyo_acceso",
+        },
+        {
+          id: "secuencia_visual",
+          nombre: "Secuencia visual de actividades",
+          etiquetaEstrategiaLegacy: "Secuencia visual de actividades",
+          orden: 70,
+          naturaleza: "apoyo_acceso",
+        },
+        {
+          id: "apoyo_visual_personalizado",
+          nombre: "Apoyo visual personalizado",
+          etiquetaEstrategiaLegacy: "Apoyo visual personalizado",
+          orden: 80,
+          naturaleza: "apoyo_acceso",
+        },
+      ],
+    },
+    {
+      id: "diseno_actividad_mediacion",
+      nombre: "Diseño de la actividad y mediación",
+      items: [
+        {
+          id: "actividad_estructurada",
+          nombre: "Actividad estructurada",
+          etiquetaEstrategiaLegacy: "Actividades estructuradas",
+          orden: 90,
+          naturaleza: "mediacion",
+        },
+        {
+          id: "actividad_basada_intereses",
+          nombre: "Actividad basada en intereses del estudiante",
+          etiquetaEstrategiaLegacy: "Actividad basada en intereses",
+          orden: 100,
+          naturaleza: "mediacion",
+        },
+        {
+          id: "modelado",
+          nombre: "Modelado",
+          etiquetaEstrategiaLegacy: "Modelado",
+          orden: 110,
+          naturaleza: "mediacion",
+        },
+        {
+          id: "refuerzo_positivo",
+          nombre: "Refuerzo positivo",
+          etiquetaEstrategiaLegacy: "Refuerzo positivo",
+          orden: 120,
+          naturaleza: "mediacion",
+        },
+      ],
+    },
+    {
+      id: "apoyo_humano",
+      nombre: "Apoyo humano",
+      items: [
+        {
+          id: "companero_tutor",
+          nombre: "Compañero tutor",
+          orden: 130,
+          naturaleza: "apoyo_humano",
+        },
+        {
+          id: "apoyo_individual",
+          nombre: "Apoyo individual",
+          etiquetaEstrategiaLegacy: "Apoyo individual",
+          orden: 140,
+          naturaleza: "apoyo_humano",
+        },
+      ],
+    },
+    {
+      id: "regulacion_entorno_acceso",
+      nombre: "Regulación, entorno y acceso",
+      items: [
+        {
+          id: "pausa_regulacion",
+          nombre: "Pausa de regulación",
+          etiquetaEstrategiaLegacy: "Pausas programadas",
+          orden: 150,
+          naturaleza: "regulacion",
+        },
+        {
+          id: "ajustes_sensoriales",
+          nombre: "Ajustes sensoriales",
+          etiquetaEstrategiaLegacy: "Ajustes sensoriales",
+          orden: 160,
+          naturaleza: "regulacion",
+        },
+        {
+          id: "tecnologia_apoyo",
+          nombre: "Tecnología de apoyo",
+          orden: 170,
+          naturaleza: "apoyo_acceso",
+        },
+      ],
+    },
+  ] as const;
+
+/** Lista plana derivada; mantiene compatibilidad con código existente. */
+export const CATALOGO_APOYOS_SESION: readonly ApoyoSesionDef[] =
+  CATALOGO_APOYOS_SESION_CATEGORIAS.flatMap((categoria) => categoria.items);
 
 export function getApoyoSesionNombre(id: ApoyoSesionId): string {
   return CATALOGO_APOYOS_SESION.find((item) => item.id === id)?.nombre ?? id;
+}
+
+export function getApoyoSesionDef(id: ApoyoSesionId): ApoyoSesionDef | undefined {
+  return CATALOGO_APOYOS_SESION.find((item) => item.id === id);
 }
 
 export function apoyosSesionToEstrategiasLegacy(ids: ApoyoSesionId[]): string[] {
@@ -260,7 +380,10 @@ export type ProfesionalSesionDef = {
   rol: string;
 };
 
-/** Placeholder hasta implementar entidad Profesional. */
+/**
+ * @deprecated Usar `@/lib/institucional/profesionales-storage`.
+ * Se conserva para compatibilidad de ids históricos en visualización.
+ */
 export const CATALOGO_PROFESIONALES_SESION: readonly ProfesionalSesionDef[] = [
   {
     id: "profesional-local",

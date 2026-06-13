@@ -1,12 +1,10 @@
-import { deleteIntervencionesByEstudianteId } from "@/lib/intervenciones-storage";
-import { deleteObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
-import { deleteSessionsByEstudianteId } from "@/lib/sessions-storage";
-
 export interface Estudiante {
   id: string;
   nombre: string;
   curso: string;
   fechaCreacion: string;
+  ingresoPieCompletado?: boolean;
+  ingresoPieCompletadoEn?: string;
 }
 
 export const MARTINA_STUDENT_ID = "martina";
@@ -39,7 +37,11 @@ function isEstudiante(value: unknown): value is Estudiante {
     typeof estudiante.id === "string" &&
     typeof estudiante.nombre === "string" &&
     typeof estudiante.curso === "string" &&
-    typeof estudiante.fechaCreacion === "string"
+    typeof estudiante.fechaCreacion === "string" &&
+    (typeof estudiante.ingresoPieCompletado === "boolean" ||
+      estudiante.ingresoPieCompletado === undefined) &&
+    (typeof estudiante.ingresoPieCompletadoEn === "string" ||
+      estudiante.ingresoPieCompletadoEn === undefined)
   );
 }
 
@@ -97,6 +99,8 @@ export function getEstudianteById(id: string): Estudiante | null {
 export function saveEstudiante(input: {
   nombre: string;
   curso: string;
+  ingresoPieCompletado?: boolean;
+  ingresoPieCompletadoEn?: string;
 }): Estudiante {
   ensureSeedEstudiantes();
 
@@ -105,6 +109,8 @@ export function saveEstudiante(input: {
     nombre: input.nombre.trim(),
     curso: input.curso.trim(),
     fechaCreacion: formatEstudianteFecha(),
+    ingresoPieCompletado: input.ingresoPieCompletado,
+    ingresoPieCompletadoEn: input.ingresoPieCompletadoEn,
   };
 
   writeEstudiantes([estudiante, ...getEstudiantes()]);
@@ -115,21 +121,24 @@ export function isProtectedEstudiante(estudianteId: string): boolean {
   return estudianteId === MARTINA_STUDENT_ID;
 }
 
+/** Quita el registro del estudiante del storage (uso interno de cascada). */
+export function removeEstudianteRecord(estudianteId: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  const estudiantes = readEstudiantesRaw();
+  const next = estudiantes.filter((estudiante) => estudiante.id !== estudianteId);
+  if (next.length === estudiantes.length) return false;
+
+  writeEstudiantes(next);
+  return true;
+}
+
+/** @deprecated Usar deleteEstudianteCompleto desde @/lib/delete-estudiante-completo */
 export function deleteEstudiante(estudianteId: string): boolean {
   if (typeof window === "undefined") return false;
-  if (isProtectedEstudiante(estudianteId)) return false;
 
-  const estudiantes = getEstudiantes();
-  if (!estudiantes.some((estudiante) => estudiante.id === estudianteId)) {
-    return false;
-  }
-
-  deleteSessionsByEstudianteId(estudianteId);
-  deleteIntervencionesByEstudianteId(estudianteId);
-  deleteObjetivosPIEByEstudianteId(estudianteId);
-
-  writeEstudiantes(
-    estudiantes.filter((estudiante) => estudiante.id !== estudianteId)
-  );
-  return true;
+  // Import dinámico para evitar dependencia circular con delete-estudiante-completo.
+  const { deleteEstudianteCompleto } =
+    require("@/lib/delete-estudiante-completo") as typeof import("@/lib/delete-estudiante-completo");
+  return deleteEstudianteCompleto(estudianteId).ok;
 }

@@ -27,10 +27,18 @@ import {
   type TipoIntervencionId,
 } from "@/lib/intervenciones-catalog";
 import {
+  deleteObservacionesByEvidenciaId,
+  deleteObservacionesByIntervencionId,
+} from "@/lib/perfil-hallazgos-storage";
+import {
   clearIntervencionIdFromSesiones,
+  deleteSession,
+  getSesiones,
   getSesionesByIntervencionId,
   updateSesionIntervencionId,
 } from "@/lib/sessions-storage";
+import { resolveProfesionalIdForPersist } from "@/lib/institucional/profesional-resolve";
+import { DEFAULT_PROFESIONAL_ID } from "@/lib/institucional/profesionales-storage";
 import { getEstudianteById } from "@/lib/students-storage";
 
 export type { TipoIntervencionId };
@@ -82,8 +90,8 @@ export type {
   TipoEspacioEstadistica,
 };
 
-/** Placeholder hasta implementar entidad Profesional. */
-export const DEFAULT_PROFESIONAL_ID = "profesional-local";
+/** @deprecated Importar desde `@/lib/institucional/profesionales-storage`. */
+export { DEFAULT_PROFESIONAL_ID };
 
 export interface Intervencion {
   id: string;
@@ -318,6 +326,7 @@ function normalizeObjetivosRelacionados(objetivoIds: string[]): string[] {
 }
 
 export function saveIntervencion(input: {
+  id?: string;
   estudianteId: string;
   profesionalId?: string;
   fecha?: string;
@@ -336,9 +345,9 @@ export function saveIntervencion(input: {
   if (espacioId && !isEspacioDisponibleParaIntervencion(espacioId)) return null;
 
   const intervencion: Intervencion = {
-    id: crypto.randomUUID(),
+    id: input.id ?? crypto.randomUUID(),
     estudianteId: input.estudianteId,
-    profesionalId: input.profesionalId?.trim() || DEFAULT_PROFESIONAL_ID,
+    profesionalId: resolveProfesionalIdForPersist(input.profesionalId),
     fecha: input.fecha?.trim() || formatIntervencionFecha(),
     tipoIntervencion: input.tipoIntervencion,
     espacioId,
@@ -400,7 +409,10 @@ export function updateIntervencion(
 
   const updated: Intervencion = {
     ...current,
-    profesionalId: input.profesionalId?.trim() || current.profesionalId,
+    profesionalId:
+      input.profesionalId !== undefined
+        ? resolveProfesionalIdForPersist(input.profesionalId)
+        : current.profesionalId,
     fecha: input.fecha?.trim() || current.fecha,
     tipoIntervencion: input.tipoIntervencion ?? current.tipoIntervencion,
     espacioId:
@@ -476,30 +488,61 @@ export function removeObjetivoFromIntervenciones(objetivoId: string): number {
   return updatedCount;
 }
 
-export function deleteIntervencion(intervencionId: string): boolean {
+/**
+ * Elimina en cascada: observaciones de perfil → evidencias (Sesion) → Intervencion.
+ */
+export function eliminarIntervencionCompleta(intervencionId: string): boolean {
   if (typeof window === "undefined") return false;
 
   const existing = readIntervenciones();
-  const next = existing.filter((item) => item.id !== intervencionId);
-  if (next.length === existing.length) return false;
+  if (!existing.some((item) => item.id === intervencionId)) return false;
 
-  clearIntervencionIdFromSesiones(intervencionId);
-  writeIntervenciones(next);
+  const evidencias = getSesionesByIntervencionId(intervencionId);
+  deleteObservacionesByIntervencionId(intervencionId);
+
+  for (const sesion of evidencias) {
+    deleteSession(sesion.id);
+  }
+
+  writeIntervenciones(existing.filter((item) => item.id !== intervencionId));
   return true;
+}
+
+/**
+ * Punto de entrada desde la UI cuando solo se conoce el id de la evidencia (Sesion).
+ */
+export function eliminarIntervencionPorEvidenciaId(evidenciaId: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  const sesion = getSesiones().find((item) => item.id === evidenciaId);
+  if (!sesion) return false;
+
+  if (sesion.intervencionId) {
+    return eliminarIntervencionCompleta(sesion.intervencionId);
+  }
+
+  deleteObservacionesByEvidenciaId(evidenciaId);
+  return deleteSession(evidenciaId);
+}
+
+/** @deprecated Usar eliminarIntervencionCompleta */
+export function deleteIntervencion(intervencionId: string): boolean {
+  return eliminarIntervencionCompleta(intervencionId);
 }
 
 export function deleteIntervencionesByEstudianteId(estudianteId: string): number {
   if (typeof window === "undefined") return 0;
 
-  const existing = readIntervenciones();
-  const toRemove = existing.filter((item) => item.estudianteId === estudianteId);
-  if (toRemove.length === 0) return 0;
+  const toRemove = readIntervenciones().filter(
+    (item) => item.estudianteId === estudianteId
+  );
+  let removed = 0;
 
   for (const intervencion of toRemove) {
-    clearIntervencionIdFromSesiones(intervencion.id);
+    if (eliminarIntervencionCompleta(intervencion.id)) {
+      removed += 1;
+    }
   }
 
-  const removeIds = new Set(toRemove.map((item) => item.id));
-  writeIntervenciones(existing.filter((item) => !removeIds.has(item.id)));
-  return toRemove.length;
+  return removed;
 }

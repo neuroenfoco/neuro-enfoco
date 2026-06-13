@@ -1,71 +1,93 @@
 "use client";
 
+import { HallazgoHistorialTrigger } from "@/components/perfil/HallazgoHistorialTrigger";
+import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
 import { AppShell } from "@/components/layout/app-shell";
 import { UsersIcon } from "@/components/layout/nav-icons";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
-  countFortalezasForEstudiante,
-  DEFAULT_OBJETIVO_ESTUDIANTE,
   EMPTY_QUIEN_ES_MESSAGE,
-  formatImpactoPromedio,
-  generateQuienEsResumen,
-  getFichaHeaderKpisForEstudiante,
-  type FichaHeaderKpis,
-  getBarrerasObservadasForEstudiante,
-  getContextosExitoForEstudiante,
-  getEstrategiasQueAyudaronForEstudiante,
-  getInteresesObservadosForEstudiante,
-  getLogrosRecientesForEstudiante,
+  generateQuienEsResumenDesdeHallazgos,
+  getFichaHeaderKpisResumenFicha,
+  getHallazgosResumenPorTipo,
+  getLogrosRecientesResumenFicha,
+  getTopFortalezasConfirmadas,
+  type HallazgoResumenItem,
+} from "@/lib/hallazgos-resumen-ficha";
+import {
+  getApoyosUtilizadosAgregadosPorEstudiante,
+  type ApoyoUtilizadoAgregado,
+} from "@/lib/apoyos-utilizados-estudiante";
+import {
+  DEFAULT_OBJETIVO_ESTUDIANTE,
   getObjetivoResumenForEstudiante,
-  getPerfilEvolutivoForEstudiante,
-  hasPerfilEvolutivoData,
   hasSesionesForEstudiante,
-  type DimensionPerfil,
-  type FrecuenciaItem,
+  formatImpactoPromedio,
+  type FichaHeaderKpis,
   type LogroReciente,
   type ObjetivoEstudianteResumen,
 } from "@/lib/sessions-storage";
-import { getObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
-import { EstudianteObjetivosTab } from "@/app/estudiantes/[id]/EstudianteObjetivosTab";
 import {
-  deleteEstudiante,
+  formatHallazgoConfirmaciones,
+  getHallazgoOrigenLabel,
+  getHallazgosByEstudianteId,
+  type HallazgoPerfil,
+  type HallazgoTipo,
+} from "@/lib/perfil-hallazgos-storage";
+import { getObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
+import { EstudianteIntervencionesTab } from "@/app/estudiantes/[id]/EstudianteIntervencionesTab";
+import { EstudianteObjetivosTab } from "@/app/estudiantes/[id]/EstudianteObjetivosTab";
+import { EstudiantePerfilBaseTab } from "@/app/estudiantes/[id]/EstudiantePerfilBaseTab";
+import { EstudianteApoyosParticipacionTab } from "@/app/estudiantes/[id]/EstudianteApoyosParticipacionTab";
+import { EstudianteAprendizajesTab } from "@/app/estudiantes/[id]/EstudianteAprendizajesTab";
+import { EstudiantePerfilEvolutivoTab } from "@/app/estudiantes/[id]/EstudiantePerfilEvolutivoTab";
+import { EliminarEstudianteDialog } from "@/components/estudiantes/EliminarEstudianteDialog";
+import { MarcoInstitucionalResumen } from "@/components/ingreso/MarcoInstitucionalResumen";
+import { EquipoApoyoResumenCard } from "@/components/equipo-apoyo/EquipoApoyoResumenCard";
+import { EvaluacionIntegralResumenCard } from "@/components/evaluacion-integral/EvaluacionIntegralResumenCard";
+import { EstudianteEquipoApoyoTab } from "@/app/estudiantes/[id]/EstudianteEquipoApoyoTab";
+import { EstudianteEvaluacionIntegralTab } from "@/app/estudiantes/[id]/EstudianteEvaluacionIntegralTab";
+import { EstudiantePACITab } from "@/app/estudiantes/[id]/EstudiantePACITab";
+import { PACIVigenteResumenCard } from "@/components/paci/PACIVigenteResumenCard";
+import {
   getEstudianteById,
   getEstudianteIniciales,
   getEstudiantePrimerNombre,
   isProtectedEstudiante,
   type Estudiante,
 } from "@/lib/students-storage";
+import { getPACIVigenteView } from "@/lib/paci/paci-view";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 const profileTabs = [
-  { id: "objetivos", label: "Objetivos", emoji: "🎯" },
   { id: "resumen", label: "Resumen", emoji: "👤" },
-  { id: "perfil", label: "Perfil Evolutivo", emoji: "📈" },
+  {
+    id: "equipo-apoyo",
+    label: GLOSSARY.equipoApoyo.tab,
+    emoji: "👥",
+  },
+  { id: "perfil-base", label: GLOSSARY.perfilBase.tab, emoji: "📋" },
+  {
+    id: "evaluacion-integral",
+    label: GLOSSARY.evaluacionIntegral.tab,
+    emoji: "🔬",
+  },
+  { id: "paci", label: GLOSSARY.paci.tab, emoji: "📄" },
+  { id: "perfil", label: GLOSSARY.perfilEvolutivo.tab, emoji: "📈" },
   { id: "sesiones", label: GLOSSARY.intervencion.tabEstudiante, emoji: "📝" },
+  { id: "objetivos", label: "Objetivos", emoji: "🎯" },
+  { id: "aprendizajes", label: GLOSSARY.aprendizajes.tab, emoji: "📚" },
   { id: "evidencias", label: "Evidencias", emoji: "📂" },
   { id: "familia", label: "Familia", emoji: "🏠" },
-  { id: "apoyos", label: "Perfil de Apoyos", emoji: "🤝" },
+  { id: "apoyos", label: "Apoyos participación", emoji: "🤝" },
 ] as const;
 
 type ProfileTabId = (typeof profileTabs)[number]["id"];
-
-function getNivelBarWidth(nivelActual: string): number {
-  switch (nivelActual) {
-    case "Emergente":
-      return 50;
-    case "En desarrollo":
-      return 75;
-    case "Consolidado":
-      return 100;
-    default:
-      return 25;
-  }
-}
 
 const headerKpiConfig = [
   {
@@ -101,19 +123,17 @@ const EMPTY_FICHA_HEADER_KPIS: FichaHeaderKpis = {
   objetivosPieActivos: "0",
 };
 
-const mainStrengths = [
-  { name: "Persistencia", icon: MountainIcon, iconBg: "bg-teal-100 text-teal-700" },
-  { name: "Empatía", icon: HeartIcon, iconBg: "bg-rose-100 text-rose-700" },
-  { name: "Creatividad", icon: SparklesIcon, iconBg: "bg-violet-100 text-violet-700" },
-  { name: "Comunicación", icon: MessageIcon, iconBg: "bg-sky-100 text-sky-700" },
-  { name: "Curiosidad", icon: LightbulbIcon, iconBg: "bg-amber-100 text-amber-800" },
+const FORTALEZA_PILL_STYLES = [
+  { icon: MountainIcon, iconBg: "bg-teal-100 text-teal-700" },
+  { icon: HeartIcon, iconBg: "bg-rose-100 text-rose-700" },
+  { icon: SparklesIcon, iconBg: "bg-violet-100 text-violet-700" },
+  { icon: MessageIcon, iconBg: "bg-sky-100 text-sky-700" },
+  { icon: LightbulbIcon, iconBg: "bg-amber-100 text-amber-800" },
 ] as const;
-
-const strengthNames = mainStrengths.map((item) => item.name);
-const DELETE_CONFIRMATION_TEXT = "ELIMINAR";
 
 export default function EstudianteFichaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
   const estudianteId = params.id;
   const isProtectedStudent = isProtectedEstudiante(estudianteId);
@@ -124,66 +144,41 @@ export default function EstudianteFichaPage() {
   const [headerKpis, setHeaderKpis] = useState<FichaHeaderKpis>(
     EMPTY_FICHA_HEADER_KPIS
   );
-  const [strengthCounts, setStrengthCounts] = useState<Record<string, number>>(
-    () => Object.fromEntries(strengthNames.map((name) => [name, 0]))
-  );
+  const [topFortalezas, setTopFortalezas] = useState<HallazgoResumenItem[]>([]);
   const [recentAchievements, setRecentAchievements] = useState<LogroReciente[]>(
     []
   );
-  const [profileDimensions, setProfileDimensions] = useState<DimensionPerfil[]>(
-    []
-  );
-  const [hasProfileData, setHasProfileData] = useState(false);
-  const [observedInterests, setObservedInterests] = useState<FrecuenciaItem[]>(
+  const [observedInterests, setObservedInterests] = useState<HallazgoResumenItem[]>(
     []
   );
   const [observedSuccessContexts, setObservedSuccessContexts] = useState<
-    FrecuenciaItem[]
+    HallazgoResumenItem[]
   >([]);
   const [hasInterestsData, setHasInterestsData] = useState(false);
   const [hasSuccessContextsData, setHasSuccessContextsData] = useState(false);
-  const [observedStrategies, setObservedStrategies] = useState<FrecuenciaItem[]>(
+  const [observedApoyos, setObservedApoyos] = useState<ApoyoUtilizadoAgregado[]>(
     []
   );
-  const [observedBarriers, setObservedBarriers] = useState<FrecuenciaItem[]>([]);
+  const [observedCondiciones, setObservedCondiciones] = useState<
+    HallazgoResumenItem[]
+  >([]);
   const [hasStrategiesData, setHasStrategiesData] = useState(false);
-  const [hasBarriersData, setHasBarriersData] = useState(false);
+  const [hasCondicionesData, setHasCondicionesData] = useState(false);
   const [objetivoResumen, setObjetivoResumen] = useState<ObjetivoEstudianteResumen | null>(
     null
   );
   const [whoIsText, setWhoIsText] = useState<string | null>(null);
+  const [hallazgosPerfil, setHallazgosPerfil] = useState<HallazgoPerfil[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileTabId>("objetivos");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const canConfirmDelete =
-    deleteConfirmText === DELETE_CONFIRMATION_TEXT && !isProtectedStudent;
-
-  function openDeleteDialog() {
-    setDeleteConfirmText("");
-    setShowDeleteDialog(true);
-  }
-
-  function closeDeleteDialog() {
-    if (isDeleting) return;
-    setShowDeleteDialog(false);
-    setDeleteConfirmText("");
-  }
-
-  function handleDeleteEstudiante() {
-    if (!canConfirmDelete || isDeleting) return;
-
-    setIsDeleting(true);
-    const deleted = deleteEstudiante(estudianteId);
-
-    if (deleted) {
-      router.push("/estudiantes?eliminado=1");
-      return;
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (!tab) return;
+    if (profileTabs.some((item) => item.id === tab)) {
+      setActiveTab(tab as ProfileTabId);
     }
-
-    setIsDeleting(false);
-  }
+  }, [searchParams]);
 
   useEffect(() => {
     const loaded = getEstudianteById(estudianteId);
@@ -196,35 +191,32 @@ export default function EstudianteFichaPage() {
     function refreshFromStorage() {
       setHasSessions(hasSesionesForEstudiante(studentId));
       setHeaderKpis(
-        getFichaHeaderKpisForEstudiante(
+        getFichaHeaderKpisResumenFicha(
           studentId,
           getObjetivosPIEByEstudianteId(studentId).length
         )
       );
-      setStrengthCounts(
-        countFortalezasForEstudiante(studentId, strengthNames)
-      );
-      setRecentAchievements(getLogrosRecientesForEstudiante(studentId));
-      setProfileDimensions(getPerfilEvolutivoForEstudiante(studentId));
-      setHasProfileData(hasPerfilEvolutivoData(studentId));
-      const interests = getInteresesObservadosForEstudiante(studentId);
-      const contexts = getContextosExitoForEstudiante(studentId);
+      setTopFortalezas(getTopFortalezasConfirmadas(studentId));
+      setRecentAchievements(getLogrosRecientesResumenFicha(studentId));
+      const interests = getHallazgosResumenPorTipo(studentId, "interes");
+      const contexts = getHallazgosResumenPorTipo(studentId, "contexto_exito");
       setObservedInterests(interests);
       setObservedSuccessContexts(contexts);
       setHasInterestsData(interests.length > 0);
       setHasSuccessContextsData(contexts.length > 0);
-      const strategies = getEstrategiasQueAyudaronForEstudiante(studentId);
-      const barriers = getBarrerasObservadasForEstudiante(studentId);
-      setObservedStrategies(strategies);
-      setObservedBarriers(barriers);
-      setHasStrategiesData(strategies.length > 0);
-      setHasBarriersData(barriers.length > 0);
+      const apoyosUtilizados = getApoyosUtilizadosAgregadosPorEstudiante(studentId);
+      const condiciones = getHallazgosResumenPorTipo(studentId, "barrera");
+      setObservedApoyos(apoyosUtilizados);
+      setObservedCondiciones(condiciones);
+      setHasStrategiesData(apoyosUtilizados.length > 0);
+      setHasCondicionesData(condiciones.length > 0);
       setObjetivoResumen(
         getObjetivoResumenForEstudiante(studentId, DEFAULT_OBJETIVO_ESTUDIANTE)
       );
       setWhoIsText(
-        generateQuienEsResumen(studentId, primerNombre, strengthNames)
+        generateQuienEsResumenDesdeHallazgos(studentId, primerNombre)
       );
+      setHallazgosPerfil(getHallazgosByEstudianteId(studentId));
     }
 
     refreshFromStorage();
@@ -282,6 +274,10 @@ export default function EstudianteFichaPage() {
             ))}
           </div>
 
+          {activeTab === "equipo-apoyo" && (
+            <EstudianteEquipoApoyoTab estudianteId={estudianteId} />
+          )}
+
           {activeTab === "objetivos" && (
             <EstudianteObjetivosTab
               estudianteId={estudianteId}
@@ -289,7 +285,59 @@ export default function EstudianteFichaPage() {
             />
           )}
 
-          {activeTab !== "objetivos" && activeTab !== "resumen" && (
+          {activeTab === "perfil-base" && (
+            <EstudiantePerfilBaseTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab === "evaluacion-integral" && (
+            <EstudianteEvaluacionIntegralTab estudianteId={estudianteId} />
+          )}
+
+          {activeTab === "paci" && (
+            <EstudiantePACITab estudianteId={estudianteId} />
+          )}
+
+          {activeTab === "sesiones" && (
+            <EstudianteIntervencionesTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab === "perfil" && (
+            <EstudiantePerfilEvolutivoTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab === "apoyos" && (
+            <EstudianteApoyosParticipacionTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab === "aprendizajes" && (
+            <EstudianteAprendizajesTab
+              estudianteId={estudianteId}
+              estudiantePrimerNombre={estudiantePrimerNombre}
+            />
+          )}
+
+          {activeTab !== "objetivos" &&
+            activeTab !== "resumen" &&
+            activeTab !== "equipo-apoyo" &&
+            activeTab !== "perfil-base" &&
+            activeTab !== "evaluacion-integral" &&
+            activeTab !== "paci" &&
+            activeTab !== "perfil" &&
+            activeTab !== "sesiones" &&
+            activeTab !== "apoyos" &&
+            activeTab !== "aprendizajes" && (
             <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
               <p className="text-sm text-slate-600">
                 Esta sección estará disponible próximamente.
@@ -299,6 +347,28 @@ export default function EstudianteFichaPage() {
 
           {activeTab === "resumen" && (
           <div className="space-y-8">
+            <MarcoInstitucionalResumen estudianteId={estudianteId} />
+
+            <EquipoApoyoResumenCard
+              estudianteId={estudianteId}
+              onVerEquipoCompleto={() => setActiveTab("equipo-apoyo")}
+            />
+
+            <EvaluacionIntegralResumenCard
+              estudianteId={estudianteId}
+              onVerEvaluacion={() => setActiveTab("evaluacion-integral")}
+            />
+
+            {(() => {
+              const paciVigente = getPACIVigenteView(estudianteId);
+              return paciVigente ? (
+                <PACIVigenteResumenCard
+                  vista={paciVigente}
+                  onVerPaci={() => setActiveTab("paci")}
+                />
+              ) : null;
+            })()}
+
             <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex gap-4">
@@ -352,17 +422,77 @@ export default function EstudianteFichaPage() {
                 title="Fortalezas principales"
                 subtitle="Capacidades observadas y reconocidas por el equipo"
               />
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                {mainStrengths.map((item) => (
-                  <StrengthPill
-                    key={item.name}
-                    {...item}
-                    count={strengthCounts[item.name] ?? 0}
-                  />
-                ))}
-              </div>
+              {topFortalezas.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-500">
+                  Aún no hay fortalezas confirmadas en intervenciones.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {topFortalezas.map((item, index) => {
+                    const style =
+                      FORTALEZA_PILL_STYLES[index % FORTALEZA_PILL_STYLES.length];
+                    return (
+                      <StrengthPill
+                        key={item.hallazgoId}
+                        name={item.nombre}
+                        icon={style.icon}
+                        iconBg={style.iconBg}
+                        count={item.confirmaciones}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
+            <section className="rounded-2xl border border-dashed border-violet-200/80 bg-gradient-to-br from-violet-50/40 via-white to-sky-50/30 p-6 shadow-[0_1px_3px_rgba(15,60,50,0.04)] sm:p-8">
+              <SectionHeading
+                title={GLOSSARY.intervencion.perfilExperimentalTitulo}
+                subtitle={GLOSSARY.intervencion.perfilExperimentalSubtitulo}
+              />
+              {hallazgosPerfil.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-500">
+                  Aún no hay hallazgos de perfil registrados para este estudiante.
+                </p>
+              ) : (
+                <div className="mt-6 space-y-6">
+                  <PerfilMarcoTerritorio dimension="perfil_estudiante">
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <PerfilHallazgoGroup
+                        title="Fortalezas conocidas"
+                        tipo="fortaleza"
+                        items={hallazgosPerfil}
+                      />
+                      <PerfilHallazgoGroup
+                        title="Intereses conocidos"
+                        tipo="interes"
+                        items={hallazgosPerfil}
+                      />
+                    </div>
+                  </PerfilMarcoTerritorio>
+                  <PerfilMarcoTerritorio
+                    dimension="perfil_participacion"
+                    showAviso
+                    avisoVariant="general"
+                  >
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <PerfilHallazgoGroup
+                        title="Contextos de éxito conocidos"
+                        tipo="contexto_exito"
+                        items={hallazgosPerfil}
+                      />
+                      <PerfilHallazgoGroup
+                        title={GLOSSARY.marco.condicionesParticipacion.tituloConocidas}
+                        tipo="barrera"
+                        items={hallazgosPerfil}
+                      />
+                    </div>
+                  </PerfilMarcoTerritorio>
+                </div>
+              )}
+            </section>
+
+            <PerfilMarcoTerritorio dimension="perfil_estudiante" className="border-0 bg-transparent p-0 shadow-none">
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <SectionHeading
@@ -373,10 +503,15 @@ export default function EstudianteFichaPage() {
                   {hasInterestsData ? (
                     observedInterests.map((interest) => (
                       <span
-                        key={interest.name}
+                        key={interest.hallazgoId}
+                        title={
+                          interest.ultimaObservacionDisplay
+                            ? `Última observación: ${interest.ultimaObservacionDisplay}`
+                            : undefined
+                        }
                         className="rounded-full border border-teal-100 bg-teal-50/60 px-3.5 py-1.5 text-sm font-medium text-teal-900"
                       >
-                        {interest.name} ({interest.count})
+                        {interest.nombre} ({interest.confirmaciones})
                       </span>
                     ))
                   ) : (
@@ -386,33 +521,8 @@ export default function EstudianteFichaPage() {
                   )}
                 </div>
               </section>
-
-              <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
-                <SectionHeading
-                  title="Contextos de éxito"
-                  subtitle={`Condiciones donde ${estudiantePrimerNombre} suele desenvolverse mejor`}
-                />
-                {hasSuccessContextsData ? (
-                  <ul className="mt-4 space-y-2.5">
-                    {observedSuccessContexts.map((context) => (
-                      <li
-                        key={context.name}
-                        className="flex items-center gap-3 rounded-xl border border-emerald-50 bg-emerald-50/30 px-4 py-3"
-                      >
-                        <CheckCircleIcon className="h-5 w-5 shrink-0 text-emerald-600" />
-                        <span className="text-sm font-medium text-slate-700">
-                          {context.name} ({context.count})
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 text-sm text-slate-500">
-                    Aún no existen contextos de éxito observados.
-                  </p>
-                )}
-              </section>
             </div>
+            </PerfilMarcoTerritorio>
 
             <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
               <SectionHeading
@@ -463,84 +573,96 @@ export default function EstudianteFichaPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
-              <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Perfil Socioemocional Evolutivo
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {GLOSSARY.intervencion.evidenciasDimensiones}
-                  </p>
-                </div>
-                <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                  Vista del estudiante
-                </span>
-              </div>
-              {!hasProfileData ? (
-                <p className="text-sm text-slate-500">
-                  Aún no existen evidencias suficientes.
-                </p>
-              ) : (
-                <ul className="space-y-4">
-                  {profileDimensions.map((dim) => (
-                    <li key={dim.label}>
-                      <p className="mb-1.5 text-sm font-medium text-slate-700">
-                        {dim.label}
-                      </p>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full ${dim.color} transition-all`}
-                          style={{
-                            width: `${getNivelBarWidth(dim.nivelActual)}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="mt-1.5 text-xs text-slate-500">
-                        Nivel:{" "}
-                        <span className="font-medium text-slate-700">
-                          {dim.nivelActual}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {dim.evidencias}{" "}
-                        {dim.evidencias === 1
-                          ? "evidencia registrada"
-                          : "evidencias registradas"}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Impacto promedio:
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">
-                          {formatImpactoPromedio(dim.progresoPromedio)} niveles
-                        </span>
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className="mt-5 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500">
-                {GLOSSARY.intervencion.perfilEvolutivoPie}
-              </p>
-            </section>
+            <PerfilMarcoTerritorio
+              dimension="perfil_participacion"
+              showAviso
+              avisoVariant="general"
+            >
+              <div className="grid gap-6 lg:grid-cols-2">
+                <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
+                  <SectionHeading
+                    title="Contextos de éxito"
+                    subtitle={GLOSSARY.estudiante.contextosExitoSubtitulo}
+                  />
+                  {hasSuccessContextsData ? (
+                    <ul className="mt-4 space-y-2.5">
+                      {observedSuccessContexts.map((context) => (
+                        <li
+                          key={context.hallazgoId}
+                          className="flex items-start gap-3 rounded-xl border border-emerald-50 bg-emerald-50/30 px-4 py-3"
+                        >
+                          <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-700">
+                              {context.nombre} ({context.confirmaciones})
+                            </p>
+                            {context.ultimaObservacionDisplay ? (
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                Última observación: {context.ultimaObservacionDisplay}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Aún no existen contextos de éxito observados.
+                    </p>
+                  )}
+                </section>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
+                <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
+                  <SectionHeading
+                    title={GLOSSARY.marco.condicionesParticipacion.tituloFrecuentes}
+                    subtitle={
+                      GLOSSARY.marco.condicionesParticipacion.subtituloFrecuentes
+                    }
+                  />
+                  {hasCondicionesData ? (
+                    <div className="mt-4 grid gap-3">
+                      {observedCondiciones.map((item) => (
+                        <div
+                          key={item.hallazgoId}
+                          className="flex items-start gap-3 rounded-xl border border-amber-100/80 bg-amber-50/30 p-4"
+                        >
+                          <AlertSoftIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-700/80" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-600">
+                              {item.nombre} ({item.confirmaciones})
+                            </p>
+                            {item.ultimaObservacionDisplay ? (
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                Última observación: {item.ultimaObservacionDisplay}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-500">
+                      {GLOSSARY.barreras.sinObservadas}
+                    </p>
+                  )}
+                </section>
+              </div>
+
+              <section className="mt-6 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
                 <SectionHeading
                   title={GLOSSARY.apoyos.suelenFacilitar}
                   subtitle={GLOSSARY.apoyos.yAjustes}
                 />
                 {hasStrategiesData ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {observedStrategies.map((item) => (
+                    {observedApoyos.map((item) => (
                       <div
-                        key={item.name}
+                        key={item.id}
                         className="flex items-start gap-3 rounded-xl border border-sky-100 bg-sky-50/40 p-4"
                       >
                         <ThumbsUpIcon className="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
                         <p className="text-sm font-medium text-slate-700">
-                          {item.name} ({item.count})
+                          {item.nombre} ({item.cantidad})
                         </p>
                       </div>
                     ))}
@@ -551,33 +673,7 @@ export default function EstudianteFichaPage() {
                   </p>
                 )}
               </section>
-
-              <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
-                <SectionHeading
-                  title={GLOSSARY.barreras.loQuePuedeDificultar}
-                  subtitle={GLOSSARY.barreras.loQuePuedeDificultarSub}
-                />
-                {hasBarriersData ? (
-                  <div className="mt-4 grid gap-3">
-                    {observedBarriers.map((item) => (
-                      <div
-                        key={item.name}
-                        className="flex items-start gap-3 rounded-xl border border-amber-100/80 bg-amber-50/30 p-4"
-                      >
-                        <AlertSoftIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-700/80" />
-                        <p className="text-sm font-medium text-slate-600">
-                          {item.name} ({item.count})
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-slate-500">
-                    {GLOSSARY.barreras.sinObservadas}
-                  </p>
-                )}
-              </section>
-            </div>
+            </PerfilMarcoTerritorio>
 
             <section className="rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/50 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
@@ -640,11 +736,11 @@ export default function EstudianteFichaPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={openDeleteDialog}
+                  onClick={() => setShowDeleteDialog(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
                 >
                   <span aria-hidden>🗑</span>
-                  Eliminar estudiante
+                  {GLOSSARY.estudiante.eliminarAccionFicha}
                 </button>
               )}
             </section>
@@ -652,75 +748,55 @@ export default function EstudianteFichaPage() {
           )}
         </main>
 
-      {showDeleteDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-          <div
-            className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-student-dialog-title"
-          >
-            <h2
-              id="delete-student-dialog-title"
-              className="text-base font-semibold text-slate-900"
-            >
-              Eliminar estudiante
-            </h2>
-            {isProtectedStudent ? (
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                El estudiante base del sistema no puede eliminarse.
-              </p>
-            ) : (
-              <>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  ¿Deseas eliminar este estudiante?
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {GLOSSARY.intervencion.eliminarEstudianteAdvertencia}
-                </p>
-                <p className="mt-2 text-sm font-medium text-slate-700">
-                  Esta acción no puede deshacerse.
-                </p>
-                <label className="mt-5 block">
-                  <span className="text-xs font-medium text-slate-600">
-                    Para continuar escribe:
-                  </span>
-                  <span className="mt-1 block text-sm font-semibold text-slate-900">
-                    {DELETE_CONFIRMATION_TEXT}
-                  </span>
-                  <input
-                    type="text"
-                    value={deleteConfirmText}
-                    onChange={(event) => setDeleteConfirmText(event.target.value)}
-                    className="mt-2 w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                </label>
-              </>
-            )}
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={closeDeleteDialog}
-                disabled={isDeleting}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteEstudiante}
-                disabled={!canConfirmDelete || isDeleting || isProtectedStudent}
-                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Eliminar definitivamente
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EliminarEstudianteDialog
+        open={showDeleteDialog}
+        estudianteId={estudianteId}
+        estudianteNombre={estudiante?.nombre}
+        onClose={() => setShowDeleteDialog(false)}
+        onDeleted={() => router.push("/estudiantes?eliminado=1")}
+      />
     </AppShell>
+  );
+}
+
+function PerfilHallazgoGroup({
+  title,
+  tipo,
+  items,
+}: {
+  title: string;
+  tipo: HallazgoTipo;
+  items: HallazgoPerfil[];
+}) {
+  const groupItems = items.filter((item) => item.tipo === tipo);
+
+  return (
+    <div className="rounded-xl border border-slate-200/70 bg-white/80 p-4">
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      {groupItems.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">Sin registros todavía.</p>
+      ) : (
+        <ul className="mt-3 space-y-3">
+          {groupItems.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5"
+            >
+              <p className="text-sm font-medium text-slate-800">{item.nombre}</p>
+              <p className="mt-1 text-xs text-slate-600">
+                Origen: {getHallazgoOrigenLabel(item.origen)}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {formatHallazgoConfirmaciones(item.totalObservaciones)}
+              </p>
+              <div className="mt-2">
+                <HallazgoHistorialTrigger hallazgoId={item.id} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

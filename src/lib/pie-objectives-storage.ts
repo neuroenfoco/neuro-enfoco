@@ -1,13 +1,15 @@
 import { GLOSSARY } from "@/lib/copy/glossary";
+import type { ConclusionSustentanteResumen } from "@/lib/evaluacion-integral/evaluacion-integral-types";
+import {
+  getEvidenciasPorObjetivoId,
+  getImpactoPromedioEvidenciasObjetivo,
+  getUltimaEvidenciaLabelEvidenciasObjetivo,
+} from "@/lib/evidencias-por-objetivo";
 import {
   formatImpactoPromedio,
   getEmotionDisplay,
   getMejoraSesionForSesion,
-  getPerfilEvolutivoForEstudiante,
-  getSesionesByEstudianteIdAndDimension,
-  getUltimaEvidenciaForDimension,
   PROFILE_DIMENSION_LABELS,
-  sortSesionesByFecha,
   type Sesion,
 } from "@/lib/sessions-storage";
 import {
@@ -17,6 +19,9 @@ import {
   type ApoyosPorObjetivo,
 } from "@/lib/pie-apoyos-storage";
 import { removeObjetivoFromIntervenciones } from "@/lib/intervenciones-storage";
+import { deleteVinculosByObjetivoId } from "@/lib/evaluacion-integral/vinculo-conclusion-objetivo-storage";
+import { deletePACIObjetivosByObjetivoId } from "@/lib/paci/paci-storage";
+import { buildBarreraDetectadaFromCondiciones } from "@/lib/objetivo-condiciones-participacion";
 import { getEstudianteById } from "@/lib/students-storage";
 
 export interface ObjetivoPIE {
@@ -25,11 +30,18 @@ export interface ObjetivoPIE {
   nombre: string;
   dimensionRelacionada: string;
   fechaInicio: string;
+  /** Denormalización legacy; se mantiene sincronizada al guardar desde catálogo. */
   barreraDetectada?: string;
+  condicionesParticipacionIds?: string[];
+  condicionParticipacionOtro?: string;
   lineaBase?: string;
   fechaLineaBase?: string;
   metaLogro?: string;
   descripcion?: string;
+  desarrolloCatalogoId?: string;
+  esDesarrolloPersonalizado?: boolean;
+  apoyosPlanificadosIds?: string[];
+  apoyoPlanificadoOtro?: string;
 }
 
 export const META_LOGRO_SIN_REGISTRO = "Sin meta registrada";
@@ -60,9 +72,19 @@ export function getMetaLogroSeguimiento(
 
 export const BARRERA_DETECTADA_AYUDA = GLOSSARY.barreras.ayudaObjetivo;
 
-export const BARRERA_DETECTADA_SIN_REGISTRO = "Sin barrera registrada";
+export const BARRERA_DETECTADA_SIN_REGISTRO =
+  GLOSSARY.marco.condicionesParticipacion.sinRegistroObjetivo;
 
 export function getBarreraDetectadaDisplay(objetivo: ObjetivoPIE): string {
+  if (objetivo.condicionesParticipacionIds?.length) {
+    return (
+      buildBarreraDetectadaFromCondiciones(
+        objetivo.condicionesParticipacionIds,
+        objetivo.condicionParticipacionOtro
+      ) ?? BARRERA_DETECTADA_SIN_REGISTRO
+    );
+  }
+
   const value = objetivo.barreraDetectada?.trim();
   return value ? value : BARRERA_DETECTADA_SIN_REGISTRO;
 }
@@ -125,6 +147,10 @@ export type ObjetivoPIEResumen = {
   impactoPromedio: number;
   ultimaEvidencia: string;
   estado: string;
+  conclusionesSustentantes: ConclusionSustentanteResumen[];
+  cantidadConclusionesSustentantes: number;
+  evaluacionOrigenId?: string;
+  tieneTrazabilidadEvaluativa: boolean;
 };
 
 export type ObjetivoPIEEvidenciaTimelineItem = {
@@ -176,12 +202,24 @@ function isObjetivoPIE(value: unknown): value is ObjetivoPIE {
     typeof objetivo.fechaInicio === "string" &&
     (typeof objetivo.barreraDetectada === "string" ||
       objetivo.barreraDetectada === undefined) &&
+    (Array.isArray(objetivo.condicionesParticipacionIds) ||
+      objetivo.condicionesParticipacionIds === undefined) &&
+    (typeof objetivo.condicionParticipacionOtro === "string" ||
+      objetivo.condicionParticipacionOtro === undefined) &&
     (typeof objetivo.lineaBase === "string" || objetivo.lineaBase === undefined) &&
     (typeof objetivo.fechaLineaBase === "string" ||
       objetivo.fechaLineaBase === undefined) &&
     (typeof objetivo.metaLogro === "string" || objetivo.metaLogro === undefined) &&
     (typeof objetivo.descripcion === "string" ||
-      objetivo.descripcion === undefined)
+      objetivo.descripcion === undefined) &&
+    (typeof objetivo.desarrolloCatalogoId === "string" ||
+      objetivo.desarrolloCatalogoId === undefined) &&
+    (typeof objetivo.esDesarrolloPersonalizado === "boolean" ||
+      objetivo.esDesarrolloPersonalizado === undefined) &&
+    (Array.isArray(objetivo.apoyosPlanificadosIds) ||
+      objetivo.apoyosPlanificadosIds === undefined) &&
+    (typeof objetivo.apoyoPlanificadoOtro === "string" ||
+      objetivo.apoyoPlanificadoOtro === undefined)
   );
 }
 
@@ -267,13 +305,7 @@ export function getObjetivoPIEDetalle(objetivoId: string): ObjetivoPIEDetalle | 
   if (!objetivo) return null;
 
   const resumen = getObjetivoPIEResumen(objetivo);
-  const evidenceSessions = sortSesionesByFecha(
-    getSesionesByEstudianteIdAndDimension(
-      objetivo.estudianteId,
-      objetivo.dimensionRelacionada
-    ),
-    "asc"
-  );
+  const evidenceSessions = getEvidenciasPorObjetivoId(objetivoId);
 
   return {
     resumen,
@@ -295,23 +327,56 @@ export function saveObjetivoPIE(input: {
   estudianteId: string;
   nombre: string;
   dimensionRelacionada: string;
-  barreraDetectada: string;
+  barreraDetectada?: string;
+  condicionesParticipacionIds?: string[];
+  condicionParticipacionOtro?: string;
   metaLogro: string;
   lineaBase?: string;
   fechaLineaBase?: string;
   descripcion?: string;
+  desarrolloCatalogoId?: string;
+  esDesarrolloPersonalizado?: boolean;
+  apoyosPlanificadosIds?: string[];
+  apoyoPlanificadoOtro?: string;
 }): ObjetivoPIE {
+  const condiciones = input.condicionesParticipacionIds?.length
+    ? {
+        condicionesParticipacionIds: [...input.condicionesParticipacionIds],
+        condicionParticipacionOtro:
+          input.condicionParticipacionOtro?.trim() || undefined,
+        barreraDetectada:
+          (buildBarreraDetectadaFromCondiciones(
+            input.condicionesParticipacionIds,
+            input.condicionParticipacionOtro
+          ) ??
+            input.barreraDetectada?.trim()) ||
+          undefined,
+      }
+    : {
+        barreraDetectada: input.barreraDetectada?.trim() || undefined,
+        condicionesParticipacionIds: undefined,
+        condicionParticipacionOtro: undefined,
+      };
+
   const objetivo: ObjetivoPIE = {
     id: crypto.randomUUID(),
     estudianteId: input.estudianteId,
     nombre: input.nombre.trim(),
     dimensionRelacionada: input.dimensionRelacionada,
     fechaInicio: formatObjetivoFechaInicio(),
-    barreraDetectada: input.barreraDetectada.trim(),
+    barreraDetectada: condiciones.barreraDetectada,
+    condicionesParticipacionIds: condiciones.condicionesParticipacionIds,
+    condicionParticipacionOtro: condiciones.condicionParticipacionOtro,
     metaLogro: input.metaLogro.trim(),
     lineaBase: input.lineaBase?.trim() || undefined,
     fechaLineaBase: input.fechaLineaBase,
     descripcion: input.descripcion?.trim() || undefined,
+    desarrolloCatalogoId: input.desarrolloCatalogoId,
+    esDesarrolloPersonalizado: input.esDesarrolloPersonalizado,
+    apoyosPlanificadosIds: input.apoyosPlanificadosIds?.length
+      ? [...input.apoyosPlanificadosIds]
+      : undefined,
+    apoyoPlanificadoOtro: input.apoyoPlanificadoOtro?.trim() || undefined,
   };
 
   writeObjetivosPIE([objetivo, ...readObjetivosPIE()]);
@@ -324,27 +389,60 @@ export function updateObjetivoPIE(
     estudianteId: string;
     nombre: string;
     dimensionRelacionada: string;
-    barreraDetectada: string;
+    barreraDetectada?: string;
+    condicionesParticipacionIds?: string[];
+    condicionParticipacionOtro?: string;
     metaLogro: string;
     lineaBase?: string;
     fechaLineaBase?: string;
     descripcion?: string;
+    desarrolloCatalogoId?: string;
+    esDesarrolloPersonalizado?: boolean;
+    apoyosPlanificadosIds?: string[];
+    apoyoPlanificadoOtro?: string;
   }
 ): ObjetivoPIE | null {
   const existing = readObjetivosPIE();
   const index = existing.findIndex((objetivo) => objetivo.id === objetivoId);
   if (index === -1) return null;
 
+  const condiciones = input.condicionesParticipacionIds?.length
+    ? {
+        condicionesParticipacionIds: [...input.condicionesParticipacionIds],
+        condicionParticipacionOtro:
+          input.condicionParticipacionOtro?.trim() || undefined,
+        barreraDetectada:
+          (buildBarreraDetectadaFromCondiciones(
+            input.condicionesParticipacionIds,
+            input.condicionParticipacionOtro
+          ) ??
+            input.barreraDetectada?.trim()) ||
+          undefined,
+      }
+    : {
+        barreraDetectada: input.barreraDetectada?.trim() || undefined,
+        condicionesParticipacionIds: undefined,
+        condicionParticipacionOtro: undefined,
+      };
+
   const updated: ObjetivoPIE = {
     ...existing[index],
     estudianteId: input.estudianteId,
     nombre: input.nombre.trim(),
     dimensionRelacionada: input.dimensionRelacionada,
-    barreraDetectada: input.barreraDetectada.trim(),
+    barreraDetectada: condiciones.barreraDetectada,
+    condicionesParticipacionIds: condiciones.condicionesParticipacionIds,
+    condicionParticipacionOtro: condiciones.condicionParticipacionOtro,
     metaLogro: input.metaLogro.trim(),
     lineaBase: input.lineaBase?.trim() || undefined,
     fechaLineaBase: input.fechaLineaBase,
     descripcion: input.descripcion?.trim() || undefined,
+    desarrolloCatalogoId: input.desarrolloCatalogoId,
+    esDesarrolloPersonalizado: input.esDesarrolloPersonalizado,
+    apoyosPlanificadosIds: input.apoyosPlanificadosIds?.length
+      ? [...input.apoyosPlanificadosIds]
+      : undefined,
+    apoyoPlanificadoOtro: input.apoyoPlanificadoOtro?.trim() || undefined,
   };
 
   const next = [...existing];
@@ -361,6 +459,8 @@ export function deleteObjetivoPIE(objetivoId: string): boolean {
   if (next.length === existing.length) return false;
 
   deleteApoyosByObjetivoId(objetivoId);
+  deleteVinculosByObjetivoId(objetivoId);
+  deletePACIObjetivosByObjetivoId(objetivoId);
   removeObjetivoFromIntervenciones(objetivoId);
   writeObjetivosPIE(next);
   return true;
@@ -380,6 +480,9 @@ export function deleteObjetivosPIEByEstudianteId(estudianteId: string): number {
 
   if (removedCount > 0) {
     deleteApoyosByObjetivoIds(objetivoIds);
+    for (const objetivoId of objetivoIds) {
+      deleteVinculosByObjetivoId(objetivoId);
+    }
     writeObjetivosPIE(next);
   }
 
@@ -398,17 +501,12 @@ export function getEstadoObjetivoPIE(
 }
 
 export function getObjetivoPIEResumen(objetivo: ObjetivoPIE): ObjetivoPIEResumen {
-  const dimensionData = getPerfilEvolutivoForEstudiante(
-    objetivo.estudianteId
-  ).find((dimension) => dimension.label === objetivo.dimensionRelacionada);
-
-  const cantidadEvidencias = dimensionData?.evidencias ?? 0;
-  const impactoPromedio = dimensionData?.progresoPromedio ?? 0;
+  const evidenceSessions = getEvidenciasPorObjetivoId(objetivo.id);
+  const cantidadEvidencias = evidenceSessions.length;
+  const impactoPromedio = getImpactoPromedioEvidenciasObjetivo(evidenceSessions);
   const ultimaEvidencia =
-    getUltimaEvidenciaForDimension(
-      objetivo.estudianteId,
-      objetivo.dimensionRelacionada
-    ) ?? "Sin evidencias registradas";
+    getUltimaEvidenciaLabelEvidenciasObjetivo(evidenceSessions) ??
+    "Sin evidencias registradas";
 
   return {
     objetivo,
@@ -416,6 +514,9 @@ export function getObjetivoPIEResumen(objetivo: ObjetivoPIE): ObjetivoPIEResumen
     impactoPromedio,
     ultimaEvidencia,
     estado: getEstadoObjetivoPIE(cantidadEvidencias, impactoPromedio),
+    conclusionesSustentantes: [],
+    cantidadConclusionesSustentantes: 0,
+    tieneTrazabilidadEvaluativa: false,
   };
 }
 

@@ -12,7 +12,20 @@ export const ROUTES = {
   estudiantes: "/estudiantes",
   intervenciones: "/intervenciones",
   intervencionesNueva: "/intervenciones/nueva",
+  profesionales: "/profesionales",
+  profesionalesNuevo: "/profesionales/nuevo",
+  profesionalEditar: (id: string) => `/profesionales/${id}/editar`,
   objetivos: "/objetivos",
+  evaluacionesNueva: "/evaluaciones/nueva",
+  evaluacionCaptura: (id: string) => `/evaluaciones/${id}`,
+  evaluacionPlanificar: (id: string) => `/evaluaciones/${id}/planificar`,
+  paciNuevo: (estudianteId?: string) =>
+    estudianteId
+      ? `/paci/nuevo?estudianteId=${encodeURIComponent(estudianteId)}`
+      : "/paci/nuevo",
+  paciDetalle: (id: string) => `/paci/${id}`,
+  estudiantePaciTab: (estudianteId: string) =>
+    `/estudiantes/${estudianteId}?tab=paci`,
   reportes: "#",
 } as const;
 
