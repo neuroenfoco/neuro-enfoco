@@ -25,7 +25,6 @@ import { reconciliarDimensionesSesion } from "@/lib/sesion-impactos-dimensiones"
 import {
   getEstudianteById,
   getEstudiantes,
-  MARTINA_STUDENT_ID,
 } from "@/lib/students-storage";
 
 export type Sesion = {
@@ -150,9 +149,6 @@ export const DEFAULT_OBJETIVO_ESTUDIANTE: ObjetivoEstudiante = {
   dimensionRelacionada: "Regulación emocional",
 };
 
-/** @deprecated Usar DEFAULT_OBJETIVO_ESTUDIANTE */
-export const DEFAULT_OBJETIVO_MARTINA = DEFAULT_OBJETIVO_ESTUDIANTE;
-
 export type FrecuenciaItem = {
   name: string;
   count: number;
@@ -182,15 +178,13 @@ export function calcularMejoraSesion(
   return estadoFinalValor - estadoInicialValor;
 }
 
-function resolveEstudianteId(sesion: Sesion): string {
+function resolveEstudianteId(sesion: Sesion): string | undefined {
   if (sesion.estudianteId) return sesion.estudianteId;
 
   const estudiantePorNombre = getEstudiantes().find(
     (estudiante) => estudiante.nombre === sesion.estudiante
   );
-  if (estudiantePorNombre) return estudiantePorNombre.id;
-
-  return MARTINA_STUDENT_ID;
+  return estudiantePorNombre?.id;
 }
 
 function normalizeSesion(sesion: Sesion): Sesion {
@@ -208,9 +202,11 @@ function normalizeSesion(sesion: Sesion): Sesion {
       ...(sesion.evidenciaLeyTEA ? (["evidencia_ley_tea"] as const) : []),
     ] as EvidenciaInstitucionalId[]);
 
+  const resolvedEstudianteId = resolveEstudianteId(sesion);
+
   const normalized: Sesion = {
     ...sesion,
-    estudianteId: resolveEstudianteId(sesion),
+    ...(resolvedEstudianteId ? { estudianteId: resolvedEstudianteId } : {}),
     espacio,
     espacioId,
     interesesObservados: sesion.interesesObservados ?? [],
@@ -351,7 +347,7 @@ export function sesionToTableRow(sesion: Sesion): SesionTableRow {
     id: sesion.id,
     date: sesion.fecha,
     student: sesion.estudiante,
-    course: getEstudianteById(estudianteId)?.curso ?? "",
+    course: estudianteId ? getEstudianteById(estudianteId)?.curso ?? "" : "",
     space: sesion.espacio,
     initialState: getEmotionDisplay(sesion.estadoInicial),
     finalState: getEmotionDisplay(sesion.estadoFinal),

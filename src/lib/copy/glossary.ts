@@ -51,8 +51,7 @@ export const GLOSSARY = {
       "Fortalezas · PIE · Ley 21.545 · Perfil evolutivo",
     focusRegistrar:
       "PIE · inclusión · convivencia · espacios · bienestar",
-    equipoEscolar: "Equipo escolar",
-    colegioDemo: "Colegio Demo",
+    institucionNeutra: "Plataforma institucional PIE",
   },
 
   nav: {
@@ -60,7 +59,6 @@ export const GLOSSARY = {
     estudiantes: "Estudiantes",
     intervenciones: "Intervenciones",
     objetivos: "Objetivos",
-    reportes: "Reportes",
   },
 
   profesional: {
@@ -825,8 +823,6 @@ export const GLOSSARY = {
     eliminarConfirmacionTexto: "ELIMINAR",
     eliminarBotonCancelar: "Cancelar",
     eliminarBotonConfirmar: "Eliminar definitivamente",
-    eliminarProtegido:
-      "El estudiante base del sistema no puede eliminarse.",
     eliminarAccionListado: "Eliminar",
     eliminarAccionFicha: "Eliminar estudiante",
     eliminarExito: "Estudiante eliminado correctamente.",
@@ -850,6 +846,13 @@ export const GLOSSARY = {
     titulo: "Centro de bienestar y seguimiento",
     subtitulo:
       "Seguimiento de bienestar, fortalezas, intervenciones y evidencias PIE y Ley 21.545 en un perfil socioemocional evolutivo.",
+    avisoMetricasDemo:
+      "Las métricas de esta vista son demostrativas y no reflejan los registros guardados en este navegador.",
+    sinDatosInstitucionales:
+      "Aún no hay estudiantes ni intervenciones registradas. Las métricas demostrativas se ocultan hasta que existan datos reales.",
+    irIngresoPie: "Iniciar ingreso PIE",
+    verEstudiantes: "Ver estudiantes",
+    seccionDemo: "Vista demostrativa",
     logroRegulacion:
       "Se observó uso de un apoyo de regulación de forma autónoma.",
     logroFrustracion:

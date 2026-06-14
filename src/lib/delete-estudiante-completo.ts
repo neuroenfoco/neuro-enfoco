@@ -34,7 +34,6 @@ import {
 import { deleteMarcoInstitucionalPIEByEstudianteId } from "@/lib/marco-institucional-pie-storage";
 import {
   getEstudianteById,
-  isProtectedEstudiante,
   removeEstudianteRecord,
 } from "@/lib/students-storage";
 
@@ -81,13 +80,6 @@ export function deleteEstudianteCompleto(
   const trimmedId = estudianteId.trim();
   if (!trimmedId) {
     return { ok: false, error: "Identificador de estudiante no válido." };
-  }
-
-  if (isProtectedEstudiante(trimmedId)) {
-    return {
-      ok: false,
-      error: "El estudiante base del sistema no puede eliminarse.",
-    };
   }
 
   if (!getEstudianteById(trimmedId)) {
