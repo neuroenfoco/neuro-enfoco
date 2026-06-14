@@ -4,11 +4,14 @@ export type AppNavId =
   | "dashboard"
   | "estudiantes"
   | "intervenciones"
-  | "objetivos";
+  | "objetivos"
+  | "reportes";
 
 export const ROUTES = {
   dashboard: "/",
   estudiantes: "/estudiantes",
+  estudiantesNuevo: "/estudiantes/nuevo",
+  estudiantesIngreso: "/estudiantes/ingreso",
   intervenciones: "/intervenciones",
   intervencionesNueva: "/intervenciones/nueva",
   profesionales: "/profesionales",
@@ -25,6 +28,7 @@ export const ROUTES = {
   paciDetalle: (id: string) => `/paci/${id}`,
   estudiantePaciTab: (estudianteId: string) =>
     `/estudiantes/${estudianteId}?tab=paci`,
+  reportes: "/reportes",
 } as const;
 
 export type AppNavItem = {
@@ -59,6 +63,12 @@ export function getAppNavItems(activeId: AppNavId): AppNavItem[] {
       label: GLOSSARY.nav.objetivos,
       href: ROUTES.objetivos,
       active: activeId === "objetivos",
+    },
+    {
+      id: "reportes",
+      label: GLOSSARY.nav.reportes,
+      href: ROUTES.reportes,
+      active: activeId === "reportes",
     },
   ];
 }

@@ -4,15 +4,21 @@ import { IngresoPiePasoConfirmacion } from "@/components/ingreso/IngresoPiePasoC
 import { IngresoPiePasoHallazgos } from "@/components/ingreso/IngresoPiePasoHallazgos";
 import { IngresoPiePasoMarco } from "@/components/ingreso/IngresoPiePasoMarco";
 import { GLOSSARY } from "@/lib/copy/glossary";
+import { ROUTES } from "@/lib/copy/navigation";
 import {
   completarIngresoPIE,
   type HallazgoIngresoBorrador,
   type IngresoPieMarcoInput,
 } from "@/lib/ingreso-pie";
 import { validateFechasMarco } from "@/lib/marco-institucional-pie-storage";
+import {
+  getEstudianteById,
+  getEstudiantes,
+  type Estudiante,
+} from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const COPY = GLOSSARY.ingresoPie;
 
@@ -35,16 +41,41 @@ export default function IngresoPiePage() {
   const [paso, setPaso] = useState<1 | 2 | 3 | 4>(1);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [estudiante, setEstudiante] = useState({ nombre: "", curso: "" });
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  const [estudianteId, setEstudianteId] = useState("");
   const [marco, setMarco] = useState<IngresoPieMarcoInput>({
     fechaIngresoPIE: todayDateInputValue(),
   });
   const [borradores, setBorradores] = useState<HallazgoIngresoBorrador[]>([]);
 
+  useEffect(() => {
+    const list = getEstudiantes();
+    setEstudiantes(list);
+
+    const preselected = new URLSearchParams(window.location.search).get(
+      "estudianteId"
+    );
+    if (preselected && list.some((item) => item.id === preselected)) {
+      setEstudianteId(preselected);
+    }
+  }, []);
+
+  const estudianteSeleccionado = useMemo(
+    () => getEstudianteById(estudianteId),
+    [estudianteId, estudiantes]
+  );
+
+  const puedeAvanzarPaso1 =
+    estudiantes.length > 0 && estudianteId.trim().length > 0;
+
   function validarPasoActual(): string | null {
     if (paso === 1) {
-      if (!estudiante.nombre.trim()) return "Ingresa el nombre del estudiante.";
-      if (!estudiante.curso.trim()) return "Ingresa el curso del estudiante.";
+      if (estudiantes.length === 0) {
+        return COPY.sinEstudiantes;
+      }
+      if (!estudianteId.trim()) {
+        return COPY.errorEstudianteRequerido;
+      }
       return validateFechasMarco(marco);
     }
     return null;
@@ -78,7 +109,7 @@ export default function IngresoPiePage() {
     setError(null);
 
     const result = completarIngresoPIE({
-      estudiante,
+      estudianteId,
       marco,
       hallazgos: borradores,
     });
@@ -92,12 +123,19 @@ export default function IngresoPiePage() {
     router.push(`/estudiantes/${result.estudianteId}?tab=perfil-base`);
   }
 
+  const estudianteResumen = estudianteSeleccionado
+    ? {
+        nombre: estudianteSeleccionado.nombre,
+        curso: estudianteSeleccionado.curso,
+      }
+    : { nombre: "", curso: "" };
+
   return (
     <div className="flex min-h-screen bg-[#f4f7f6] text-slate-800">
       <div className="mx-auto flex w-full max-w-4xl flex-col px-8 py-10">
         <div className="mb-8">
           <Link
-            href="/estudiantes"
+            href={ROUTES.estudiantes}
             className="text-sm font-medium text-teal-700 hover:text-teal-800"
           >
             ← Volver a estudiantes
@@ -128,9 +166,10 @@ export default function IngresoPiePage() {
         <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
           {paso === 1 ? (
             <IngresoPiePasoMarco
-              estudiante={estudiante}
+              estudiantes={estudiantes}
+              estudianteId={estudianteId}
               marco={marco}
-              onEstudianteChange={setEstudiante}
+              onEstudianteIdChange={setEstudianteId}
               onMarcoChange={setMarco}
             />
           ) : null}
@@ -167,7 +206,7 @@ export default function IngresoPiePage() {
 
           {paso === 4 ? (
             <IngresoPiePasoConfirmacion
-              estudiante={estudiante}
+              estudiante={estudianteResumen}
               marco={marco}
               borradores={borradores}
             />
@@ -196,7 +235,8 @@ export default function IngresoPiePage() {
               <button
                 type="button"
                 onClick={handleSiguiente}
-                className="rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 hover:from-teal-700 hover:to-emerald-700"
+                disabled={paso === 1 && !puedeAvanzarPaso1}
+                className="rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Siguiente
               </button>
@@ -204,7 +244,7 @@ export default function IngresoPiePage() {
               <button
                 type="button"
                 onClick={handleCompletar}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !puedeAvanzarPaso1}
                 className="rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? "Guardando…" : COPY.completar}

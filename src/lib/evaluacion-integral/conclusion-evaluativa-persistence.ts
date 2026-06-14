@@ -1,3 +1,4 @@
+import { getStorageAdapter } from "@/lib/core/browser-storage-adapter";
 import { isConclusionEvaluativaDimensionId } from "@/lib/evaluacion-integral/conclusion-evaluativa-dimensiones";
 import {
   compareConclusionesPorPrioridad,
@@ -53,27 +54,16 @@ function isConclusionEvaluativa(value: unknown): value is ConclusionEvaluativa {
 }
 
 export function readConclusionesEvaluativas(): ConclusionEvaluativa[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.localStorage.getItem(CONCLUSION_EVALUATIVA_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isConclusionEvaluativa);
-  } catch {
-    return [];
-  }
+  const parsed = getStorageAdapter().read<unknown>(
+    CONCLUSION_EVALUATIVA_STORAGE_KEY
+  );
+  return parsed.filter(isConclusionEvaluativa);
 }
 
 export function writeConclusionesEvaluativas(
   items: ConclusionEvaluativa[]
 ): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    CONCLUSION_EVALUATIVA_STORAGE_KEY,
-    JSON.stringify(items)
-  );
+  getStorageAdapter().write(CONCLUSION_EVALUATIVA_STORAGE_KEY, items);
 }
 
 export function sortConclusionesEvaluativas(

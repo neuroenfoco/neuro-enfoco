@@ -105,7 +105,11 @@ export default function PACIDetallePage({ params }: PACIDetallePageProps) {
           </header>
 
           <div className="mt-8 space-y-6">
-            <PACIAccionesPanel paci={paci} onActionComplete={handleActionComplete} />
+            <PACIAccionesPanel
+              paci={paci}
+              validationRevision={refreshKey}
+              onActionComplete={handleActionComplete}
+            />
 
             <PACIIndicadoresCard indicadores={detalle.metricas.indicadores} />
 

@@ -114,10 +114,10 @@ export default function NuevoObjetivoPage() {
             <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-amber-900">
               <p>Primero debes registrar al menos un estudiante.</p>
               <Link
-                href="/estudiantes/ingreso"
+                href={ROUTES.estudiantesNuevo}
                 className="mt-3 inline-flex font-medium text-teal-700 hover:text-teal-800"
               >
-                Crear estudiante
+                {GLOSSARY.estudiante.nuevoCta}
               </Link>
             </div>
           ) : (

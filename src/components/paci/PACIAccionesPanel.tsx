@@ -14,6 +14,8 @@ const COPY = GLOSSARY.paci;
 
 type PACIAccionesPanelProps = {
   paci: PACI;
+  /** Incrementar tras syncPACIObjetivos, updatePACIBorrador o cambio de evaluación. */
+  validationRevision: number;
   onActionComplete: () => void;
 };
 
@@ -30,13 +32,23 @@ function getEstadoLabel(estado: PACI["estado"]): string {
   }
 }
 
-export function PACIAccionesPanel({ paci, onActionComplete }: PACIAccionesPanelProps) {
+export function PACIAccionesPanel({
+  paci,
+  validationRevision,
+  onActionComplete,
+}: PACIAccionesPanelProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const declaracion = useMemo(
     () => (paci.estado === "borrador" ? canDeclararPACIVigente(paci.id) : null),
-    [paci.id, paci.estado]
+    [
+      paci.id,
+      paci.estado,
+      paci.actualizadoEn,
+      paci.evaluacionReferenciaId,
+      validationRevision,
+    ]
   );
 
   function handleDeclararVigente() {

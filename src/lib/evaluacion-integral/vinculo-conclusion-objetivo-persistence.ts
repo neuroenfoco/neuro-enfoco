@@ -1,3 +1,4 @@
+import { getStorageAdapter } from "@/lib/core/browser-storage-adapter";
 import type { VinculoConclusionObjetivoPIE } from "@/lib/evaluacion-integral/evaluacion-integral-types";
 
 export const VINCULO_CONCLUSION_OBJETIVO_STORAGE_KEY =
@@ -19,25 +20,14 @@ function isVinculoConclusionObjetivoPIE(
 }
 
 export function readVinculosConclusionObjetivo(): VinculoConclusionObjetivoPIE[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.localStorage.getItem(VINCULO_CONCLUSION_OBJETIVO_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isVinculoConclusionObjetivoPIE);
-  } catch {
-    return [];
-  }
+  const parsed = getStorageAdapter().read<unknown>(
+    VINCULO_CONCLUSION_OBJETIVO_STORAGE_KEY
+  );
+  return parsed.filter(isVinculoConclusionObjetivoPIE);
 }
 
 export function writeVinculosConclusionObjetivo(
   items: VinculoConclusionObjetivoPIE[]
 ): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    VINCULO_CONCLUSION_OBJETIVO_STORAGE_KEY,
-    JSON.stringify(items)
-  );
+  getStorageAdapter().write(VINCULO_CONCLUSION_OBJETIVO_STORAGE_KEY, items);
 }

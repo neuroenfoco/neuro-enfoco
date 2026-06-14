@@ -3,14 +3,11 @@
 import { HallazgoHistorialTrigger } from "@/components/perfil/HallazgoHistorialTrigger";
 import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
 import { AppShell } from "@/components/layout/app-shell";
-import { UsersIcon } from "@/components/layout/nav-icons";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   EMPTY_QUIEN_ES_MESSAGE,
   generateQuienEsResumenDesdeHallazgos,
-  getFichaHeaderKpisResumenFicha,
   getHallazgosResumenPorTipo,
-  getLogrosRecientesResumenFicha,
   getTopFortalezasConfirmadas,
   type HallazgoResumenItem,
 } from "@/lib/hallazgos-resumen-ficha";
@@ -18,15 +15,7 @@ import {
   getApoyosUtilizadosAgregadosPorEstudiante,
   type ApoyoUtilizadoAgregado,
 } from "@/lib/apoyos-utilizados-estudiante";
-import {
-  DEFAULT_OBJETIVO_ESTUDIANTE,
-  getObjetivoResumenForEstudiante,
-  hasSesionesForEstudiante,
-  formatImpactoPromedio,
-  type FichaHeaderKpis,
-  type LogroReciente,
-  type ObjetivoEstudianteResumen,
-} from "@/lib/sessions-storage";
+import { hasSesionesForEstudiante } from "@/lib/sessions-storage";
 import {
   formatHallazgoConfirmaciones,
   getHallazgoOrigenLabel,
@@ -34,13 +23,18 @@ import {
   type HallazgoPerfil,
   type HallazgoTipo,
 } from "@/lib/perfil-hallazgos-storage";
-import { getObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
 import { EstudianteIntervencionesTab } from "@/app/estudiantes/[id]/EstudianteIntervencionesTab";
 import { EstudianteObjetivosTab } from "@/app/estudiantes/[id]/EstudianteObjetivosTab";
 import { EstudiantePerfilBaseTab } from "@/app/estudiantes/[id]/EstudiantePerfilBaseTab";
 import { EstudianteApoyosParticipacionTab } from "@/app/estudiantes/[id]/EstudianteApoyosParticipacionTab";
 import { EstudianteAprendizajesTab } from "@/app/estudiantes/[id]/EstudianteAprendizajesTab";
 import { EstudiantePerfilEvolutivoTab } from "@/app/estudiantes/[id]/EstudiantePerfilEvolutivoTab";
+import { EstudianteAccionesSugeridas } from "@/components/estudiante/EstudianteAccionesSugeridas";
+import { EstudianteApoyosSection } from "@/components/estudiante/EstudianteApoyosSection";
+import { EstudianteBarrerasApoyosSection } from "@/components/estudiante/EstudianteBarrerasApoyosSection";
+import { EstudianteObjetivosSeguimientoSection } from "@/components/estudiante/EstudianteObjetivosSeguimientoSection";
+import { EstudianteResumenIntegralCard } from "@/components/estudiante/EstudianteResumenIntegralCard";
+import { EstudianteTimelineActividad } from "@/components/estudiante/EstudianteTimelineActividad";
 import { EliminarEstudianteDialog } from "@/components/estudiantes/EliminarEstudianteDialog";
 import { MarcoInstitucionalResumen } from "@/components/ingreso/MarcoInstitucionalResumen";
 import { EquipoApoyoResumenCard } from "@/components/equipo-apoyo/EquipoApoyoResumenCard";
@@ -51,7 +45,6 @@ import { EstudiantePACITab } from "@/app/estudiantes/[id]/EstudiantePACITab";
 import { PACIVigenteResumenCard } from "@/components/paci/PACIVigenteResumenCard";
 import {
   getEstudianteById,
-  getEstudianteIniciales,
   getEstudiantePrimerNombre,
   type Estudiante,
 } from "@/lib/students-storage";
@@ -88,40 +81,6 @@ const profileTabs = [
 
 type ProfileTabId = (typeof profileTabs)[number]["id"];
 
-const headerKpiConfig = [
-  {
-    key: "fortalezasObservadas",
-    title: "Fortalezas observadas",
-    icon: HeartHandshakeIcon,
-    accent: "bg-teal-50 text-teal-700 ring-teal-100",
-  },
-  {
-    key: "sesionesRegistradas",
-    title: GLOSSARY.intervencion.kpiRegistradas,
-    icon: WavesIcon,
-    accent: "bg-sky-50 text-sky-700 ring-sky-100",
-  },
-  {
-    key: "impactoPromedio",
-    title: "Impacto promedio",
-    icon: UsersIcon,
-    accent: "bg-amber-50 text-amber-800 ring-amber-100",
-  },
-  {
-    key: "objetivosPieActivos",
-    title: "Objetivos PIE activos",
-    icon: SparklesIcon,
-    accent: "bg-violet-50 text-violet-700 ring-violet-100",
-  },
-] as const;
-
-const EMPTY_FICHA_HEADER_KPIS: FichaHeaderKpis = {
-  fortalezasObservadas: "0",
-  sesionesRegistradas: "0",
-  impactoPromedio: "Sin datos",
-  objetivosPieActivos: "0",
-};
-
 const FORTALEZA_PILL_STYLES = [
   { icon: MountainIcon, iconBg: "bg-teal-100 text-teal-700" },
   { icon: HeartIcon, iconBg: "bg-rose-100 text-rose-700" },
@@ -135,17 +94,10 @@ export default function EstudianteFichaPage() {
   const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
   const estudianteId = params.id;
-  const [estudiante, setEstudiante] = useState<Estudiante | null>(() =>
-    typeof window === "undefined" ? null : getEstudianteById(estudianteId)
-  );
+  const [estudiante, setEstudiante] = useState<Estudiante | null>(null);
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const [hasSessions, setHasSessions] = useState(false);
-  const [headerKpis, setHeaderKpis] = useState<FichaHeaderKpis>(
-    EMPTY_FICHA_HEADER_KPIS
-  );
   const [topFortalezas, setTopFortalezas] = useState<HallazgoResumenItem[]>([]);
-  const [recentAchievements, setRecentAchievements] = useState<LogroReciente[]>(
-    []
-  );
   const [observedInterests, setObservedInterests] = useState<HallazgoResumenItem[]>(
     []
   );
@@ -162,12 +114,9 @@ export default function EstudianteFichaPage() {
   >([]);
   const [hasStrategiesData, setHasStrategiesData] = useState(false);
   const [hasCondicionesData, setHasCondicionesData] = useState(false);
-  const [objetivoResumen, setObjetivoResumen] = useState<ObjetivoEstudianteResumen | null>(
-    null
-  );
   const [whoIsText, setWhoIsText] = useState<string | null>(null);
   const [hallazgosPerfil, setHallazgosPerfil] = useState<HallazgoPerfil[]>([]);
-  const [activeTab, setActiveTab] = useState<ProfileTabId>("objetivos");
+  const [activeTab, setActiveTab] = useState<ProfileTabId>("resumen");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
@@ -181,6 +130,7 @@ export default function EstudianteFichaPage() {
   useEffect(() => {
     const loaded = getEstudianteById(estudianteId);
     setEstudiante(loaded);
+    setIsStorageReady(true);
     if (!loaded) return;
 
     const studentId = loaded.id;
@@ -188,14 +138,7 @@ export default function EstudianteFichaPage() {
 
     function refreshFromStorage() {
       setHasSessions(hasSesionesForEstudiante(studentId));
-      setHeaderKpis(
-        getFichaHeaderKpisResumenFicha(
-          studentId,
-          getObjetivosPIEByEstudianteId(studentId).length
-        )
-      );
       setTopFortalezas(getTopFortalezasConfirmadas(studentId));
-      setRecentAchievements(getLogrosRecientesResumenFicha(studentId));
       const interests = getHallazgosResumenPorTipo(studentId, "interes");
       const contexts = getHallazgosResumenPorTipo(studentId, "contexto_exito");
       setObservedInterests(interests);
@@ -208,9 +151,6 @@ export default function EstudianteFichaPage() {
       setObservedCondiciones(condiciones);
       setHasStrategiesData(apoyosUtilizados.length > 0);
       setHasCondicionesData(condiciones.length > 0);
-      setObjetivoResumen(
-        getObjetivoResumenForEstudiante(studentId, DEFAULT_OBJETIVO_ESTUDIANTE)
-      );
       setWhoIsText(
         generateQuienEsResumenDesdeHallazgos(studentId, primerNombre)
       );
@@ -227,23 +167,36 @@ export default function EstudianteFichaPage() {
     };
   }, [estudianteId]);
 
-  if (!estudiante) {
+  if (!isStorageReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f4f7f6] px-8 text-slate-600">
-        <div className="max-w-md rounded-2xl border border-slate-200/70 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm">Estudiante no encontrado.</p>
-          <Link
-            href="/estudiantes"
-            className="mt-4 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800"
-          >
-            Volver al listado
-          </Link>
+      <AppShell activeNav="estudiantes">
+        <div className="flex flex-1 items-center justify-center px-8 py-10 text-slate-600">
+          <p className="text-sm" aria-live="polite">
+            Cargando ficha del estudiante…
+          </p>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
-  const estudianteIniciales = getEstudianteIniciales(estudiante.nombre);
+  if (!estudiante) {
+    return (
+      <AppShell activeNav="estudiantes">
+        <div className="flex flex-1 items-center justify-center px-8 py-10 text-slate-600">
+          <div className="max-w-md rounded-2xl border border-slate-200/70 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm">Estudiante no encontrado.</p>
+            <Link
+              href="/estudiantes"
+              className="mt-4 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800"
+            >
+              Volver al listado
+            </Link>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   const estudiantePrimerNombre = getEstudiantePrimerNombre(estudiante.nombre);
 
   return (
@@ -345,6 +298,27 @@ export default function EstudianteFichaPage() {
 
           {activeTab === "resumen" && (
           <div className="space-y-8">
+            <EstudianteResumenIntegralCard estudianteId={estudianteId} />
+
+            <EstudianteAccionesSugeridas
+              estudianteId={estudianteId}
+              onIrEvaluacion={() => setActiveTab("evaluacion-integral")}
+              onIrObjetivos={() => setActiveTab("objetivos")}
+              onIrPaci={() => setActiveTab("paci")}
+              onIrIntervenciones={() => setActiveTab("sesiones")}
+            />
+
+            <EstudianteObjetivosSeguimientoSection
+              estudianteId={estudianteId}
+              onIrIntervenciones={() => setActiveTab("sesiones")}
+            />
+
+            <EstudianteBarrerasApoyosSection estudianteId={estudianteId} />
+
+            <EstudianteApoyosSection estudianteId={estudianteId} />
+
+            <EstudianteTimelineActividad estudianteId={estudianteId} />
+
             <MarcoInstitucionalResumen estudianteId={estudianteId} />
 
             <EquipoApoyoResumenCard
@@ -366,37 +340,6 @@ export default function EstudianteFichaPage() {
                 />
               ) : null;
             })()}
-
-            <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 text-xl font-semibold text-white shadow-md shadow-teal-600/20">
-                    {estudianteIniciales}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                      {estudiante.nombre}
-                    </h1>
-                    <p className="mt-1 text-base text-slate-600">{estudiante.curso}</p>
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-slate-500">
-                      <ClockIcon className="h-4 w-4 text-teal-600/70" />
-                      {GLOSSARY.intervencion.fichaActualizada}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {headerKpiConfig.map((kpi) => (
-                  <HeaderKpiCard
-                    key={kpi.key}
-                    title={kpi.title}
-                    value={headerKpis[kpi.key]}
-                    icon={kpi.icon}
-                    accent={kpi.accent}
-                  />
-                ))}
-              </div>
-            </section>
 
             <section className="rounded-2xl border-2 border-teal-200/70 bg-gradient-to-br from-teal-50/80 via-white to-emerald-50/40 p-8 shadow-[0_4px_24px_rgba(15,80,60,0.08)] sm:p-10">
               <p className="text-xs font-semibold uppercase tracking-wider text-teal-800/80">
@@ -522,55 +465,6 @@ export default function EstudianteFichaPage() {
             </div>
             </PerfilMarcoTerritorio>
 
-            <section className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
-              <SectionHeading
-                title="Logros recientes"
-                subtitle="Avances documentados desde un enfoque de fortalezas"
-              />
-              {recentAchievements.length === 0 ? (
-                <p className="mt-6 text-sm text-slate-500">
-                  Aún no existen registros de logros.
-                </p>
-              ) : (
-                <ol className="relative mt-6 space-y-0">
-                  {recentAchievements.map((item, index) => (
-                    <li
-                      key={item.id}
-                      className="relative flex gap-4 pb-8 last:pb-0"
-                    >
-                      {index < recentAchievements.length - 1 && (
-                        <span
-                          className="absolute left-[11px] top-8 h-full w-px bg-teal-100"
-                          aria-hidden
-                        />
-                      )}
-                      <span className="relative z-10 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-100 ring-4 ring-white">
-                        <span className="h-2 w-2 rounded-full bg-teal-600" />
-                      </span>
-                      <div className="min-w-0 flex-1 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-                        <p className="text-xs text-slate-400">{item.fecha}</p>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                          {item.logro}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-500">
-                          <span className="font-medium text-slate-600">
-                            Fortaleza:
-                          </span>{" "}
-                          {item.fortaleza}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          <span className="font-medium text-slate-600">
-                            Espacio:
-                          </span>{" "}
-                          {item.espacio}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-
             <PerfilMarcoTerritorio
               dimension="perfil_participacion"
               showAviso
@@ -672,59 +566,6 @@ export default function EstudianteFichaPage() {
                 )}
               </section>
             </PerfilMarcoTerritorio>
-
-            <section className="rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/50 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
-                Próximo objetivo
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                {objetivoResumen?.objetivo.nombre ?? DEFAULT_OBJETIVO_ESTUDIANTE.nombre}
-              </h2>
-              {objetivoResumen && (
-                <div className="mt-5 space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Estado:</p>
-                    <p className="text-sm font-medium text-slate-800">
-                      {objetivoResumen.estado}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Impacto promedio:</p>
-                    <p className="text-sm font-medium text-slate-800">
-                      {formatImpactoPromedio(objetivoResumen.progresoPromedio)}{" "}
-                      niveles
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Evidencias asociadas:</p>
-                    <p className="text-sm font-medium text-slate-800">
-                      {objetivoResumen.evidenciasAsociadas}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Última evidencia:</p>
-                    <p className="text-sm font-medium text-slate-800">
-                      {objetivoResumen.ultimaEvidencia}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-2xl border border-violet-100 bg-violet-50/30 p-5">
-              <p className="text-sm text-slate-700">
-                El seguimiento pedagógico completo de objetivos, evidencias y
-                apoyos está en la pestaña{" "}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("objetivos")}
-                  className="font-semibold text-violet-700 underline-offset-2 hover:underline"
-                >
-                  Objetivos
-                </button>
-                .
-              </p>
-            </section>
 
             <section className="border-t border-slate-200/80 pt-6">
               <button
@@ -836,34 +677,6 @@ function ProfileTab({
   );
 }
 
-function HeaderKpiCard({
-  title,
-  value,
-  icon: Icon,
-  accent,
-}: {
-  title: string;
-  value: string;
-  icon: IconComponent;
-  accent: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-slate-500">{title}</p>
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 ring-inset ${accent}`}
-        >
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900">
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function StrengthPill({
   name,
   icon: Icon,
@@ -890,40 +703,6 @@ function StrengthPill({
         {count === 1 ? "observación" : "observaciones"}
       </p>
     </div>
-  );
-}
-
-function HeartHandshakeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-    </svg>
-  );
-}
-
-function WavesIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M2 12c2-4 4-6 6-6s4 2 6 6 4 6 6 6 4-2 6-6" />
-    </svg>
   );
 }
 
@@ -1008,24 +787,6 @@ function LightbulbIcon({ className }: { className?: string }) {
       aria-hidden
     >
       <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z" />
-    </svg>
-  );
-}
-
-function ClockIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
     </svg>
   );
 }

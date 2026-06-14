@@ -1,3 +1,4 @@
+import { deleteVinculosByIntervencionId } from "@/lib/apoyos/apoyo-intervencion-storage";
 import {
   getEstadisticasPorEspacio,
   getEstadisticasPorTipoEspacio,
@@ -504,6 +505,7 @@ export function eliminarIntervencionCompleta(intervencionId: string): boolean {
     deleteSession(sesion.id);
   }
 
+  deleteVinculosByIntervencionId(intervencionId);
   writeIntervenciones(existing.filter((item) => item.id !== intervencionId));
   return true;
 }

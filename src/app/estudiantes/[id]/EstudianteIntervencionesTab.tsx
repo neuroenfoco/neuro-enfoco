@@ -1,5 +1,6 @@
 "use client";
 
+import { IntervencionApoyosRelacionadosPanel } from "@/components/apoyos/IntervencionApoyosRelacionadosPanel";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
 import {
@@ -223,7 +224,11 @@ export function EstudianteIntervencionesTab({
       ) : (
         <div className="space-y-5">
           {ficha.items.map((item) => (
-            <IntervencionHistorialCard key={item.intervencion.id} item={item} />
+            <IntervencionHistorialCard
+              key={item.intervencion.id}
+              item={item}
+              estudianteId={estudianteId}
+            />
           ))}
         </div>
       )}
@@ -231,7 +236,13 @@ export function EstudianteIntervencionesTab({
   );
 }
 
-function IntervencionHistorialCard({ item }: { item: IntervencionFichaItem }) {
+function IntervencionHistorialCard({
+  item,
+  estudianteId,
+}: {
+  item: IntervencionFichaItem;
+  estudianteId: string;
+}) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
       <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8">
@@ -360,6 +371,11 @@ function IntervencionHistorialCard({ item }: { item: IntervencionFichaItem }) {
             </ul>
           </section>
         )}
+
+        <IntervencionApoyosRelacionadosPanel
+          intervencionId={item.intervencion.id}
+          estudianteId={estudianteId}
+        />
       </div>
     </article>
   );
