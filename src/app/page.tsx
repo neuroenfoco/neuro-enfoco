@@ -1,4 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
+import {
+  DashboardDemoGate,
+} from "@/components/dashboard/DashboardDemoGate";
 import { CalendarIcon } from "@/components/layout/nav-icons";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
@@ -102,38 +105,38 @@ const profileDimensions = [
 const studentAchievements = [
   {
     id: 1,
-    student: "Martina R.",
-    course: "3° básico",
+    student: "Registro reciente",
+    course: "PIE",
     text: GLOSSARY.dashboard.logroRegulacion,
     tag: "Regulación emocional",
-    time: "Hace 2 h",
+    time: "Reciente",
     tagStyle: "bg-sky-50 text-sky-700",
   },
   {
     id: 2,
-    student: "Tomás V.",
+    student: "Evidencia documentada",
     course: GLOSSARY.estudiante.cursoPie,
     text: GLOSSARY.dashboard.logroFrustracion,
     tag: "Evidencia PIE",
-    time: "Hace 5 h",
+    time: "Esta semana",
     tagStyle: "bg-violet-50 text-violet-700",
   },
   {
     id: 3,
-    student: "Sofía M.",
+    student: "Participación escolar",
     course: GLOSSARY.estudiante.cursoConApoyosLey,
-    text: "Participó activamente en una actividad grupal.",
+    text: "Participación favorable documentada en intervención grupal.",
     tag: "Ley TEA",
-    time: "Ayer",
+    time: "Esta semana",
     tagStyle: "bg-teal-50 text-teal-700",
   },
   {
     id: 4,
-    student: "Diego L.",
-    course: "4° básico",
+    student: "Perfil evolutivo",
+    course: "Seguimiento",
     text: GLOSSARY.dashboard.logroEmociones,
     tag: "Perfil evolutivo",
-    time: "Ayer",
+    time: "Últimos días",
     tagStyle: "bg-amber-50 text-amber-800",
   },
 ] as const;
@@ -218,10 +221,11 @@ export default function Home() {
         </header>
 
         <main className="flex-1 space-y-8 px-8 py-8">
+          <DashboardDemoGate>
           <section>
             <SectionHeading
               title="Indicadores de bienestar"
-              subtitle="Vista consolidada del curso · datos de ejemplo"
+              subtitle={`Vista consolidada del curso · ${GLOSSARY.dashboard.seccionDemo}`}
             />
             <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {kpiCards.map((card) => (
@@ -233,7 +237,7 @@ export default function Home() {
           <section>
             <SectionHeading
               title="Fortalezas observadas esta semana"
-              subtitle="Enfoque basado en capacidades y talentos del estudiante"
+              subtitle={`Enfoque basado en capacidades y talentos del estudiante · ${GLOSSARY.dashboard.seccionDemo}`}
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {strengths.map((item) => (
@@ -366,6 +370,7 @@ export default function Home() {
               </div>
             </div>
           </section>
+          </DashboardDemoGate>
         </main>
     </AppShell>
   );

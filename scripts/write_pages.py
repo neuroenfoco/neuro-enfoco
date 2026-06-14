@@ -141,7 +141,7 @@ function NavLink({{ label, href, active, icon: Icon }}: {{ label: string; href: 
 estudiantes_main = '''
 export default function EstudiantesPage() {
   const students = [
-    { name: "Martina Ramírez", course: "3° Básico", href: "/estudiantes/martina", initials: "MR", highlight: true },
+    { name: "Estudiante ejemplo", course: "3° Básico", href: "/estudiantes", initials: "EE", highlight: true },
     { name: "Tomás Herrera", course: "4° Básico", href: "#", initials: "TH", highlight: false },
     { name: "Sofía Lagos", course: "2° Medio", href: "#", initials: "SL", highlight: false },
     { name: "Benjamín Ortiz", course: "5° Básico", href: "#", initials: "BO", highlight: false },

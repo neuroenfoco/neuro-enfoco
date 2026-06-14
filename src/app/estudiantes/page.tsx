@@ -6,7 +6,6 @@ import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   getEstudianteIniciales,
   getEstudiantes,
-  isProtectedEstudiante,
   type Estudiante,
 } from "@/lib/students-storage";
 import Link from "next/link";
@@ -134,18 +133,16 @@ export default function EstudiantesPage() {
                       >
                         Ver ficha
                       </Link>
-                      {!isProtectedEstudiante(student.id) && (
-                        <button
-                          type="button"
-                          className="block w-full px-4 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            setDeleteTarget(student);
-                          }}
-                        >
-                          {GLOSSARY.estudiante.eliminarAccionListado}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="block w-full px-4 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          setDeleteTarget(student);
+                        }}
+                      >
+                        {GLOSSARY.estudiante.eliminarAccionListado}
+                      </button>
                     </div>
                   )}
                 </div>

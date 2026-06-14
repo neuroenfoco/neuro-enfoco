@@ -482,6 +482,7 @@ export function deleteObjetivosPIEByEstudianteId(estudianteId: string): number {
     deleteApoyosByObjetivoIds(objetivoIds);
     for (const objetivoId of objetivoIds) {
       deleteVinculosByObjetivoId(objetivoId);
+      deletePACIObjetivosByObjetivoId(objetivoId);
     }
     writeObjetivosPIE(next);
   }

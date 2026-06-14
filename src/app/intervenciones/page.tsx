@@ -9,13 +9,16 @@ import {
   isStoredSessionId,
   type SesionTableRow,
 } from "@/lib/sessions-storage";
+import { getEstudiantes, type Estudiante } from "@/lib/students-storage";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const DELETE_CONFIRMATION_TEXT = "ELIMINAR";
 
 export default function IntervencionesPage() {
   const [sessions, setSessions] = useState<SesionTableRow[]>([]);
+  const [students, setStudents] = useState<Estudiante[]>([]);
+  const [filterStudentId, setFilterStudentId] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -26,7 +29,15 @@ export default function IntervencionesPage() {
 
   function refreshSessions() {
     setSessions(getStoredTableRows());
+    setStudents(getEstudiantes());
   }
+
+  const filteredSessions = useMemo(() => {
+    if (!filterStudentId) return sessions;
+    const student = students.find((item) => item.id === filterStudentId);
+    if (!student) return sessions;
+    return sessions.filter((session) => session.student === student.nombre);
+  }, [sessions, filterStudentId, students]);
 
   useEffect(() => {
     refreshSessions();
@@ -107,14 +118,16 @@ export default function IntervencionesPage() {
             <FilterField label="Estudiante">
               <select
                 className="w-full rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-700 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                defaultValue=""
+                value={filterStudentId}
+                onChange={(event) => setFilterStudentId(event.target.value)}
                 aria-label="Filtrar por estudiante"
               >
                 <option value="">Todos los estudiantes</option>
-                <option>Martina Ramírez</option>
-                <option>Tomás Villanueva</option>
-                <option>Sofía Morales</option>
-                <option>Diego López</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.nombre}
+                  </option>
+                ))}
               </select>
             </FilterField>
             <FilterField label="Espacio">
@@ -178,7 +191,7 @@ export default function IntervencionesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {sessions.map((session) => (
+                  {filteredSessions.map((session) => (
                     <tr
                       key={session.id}
                       className="transition hover:bg-teal-50/20"

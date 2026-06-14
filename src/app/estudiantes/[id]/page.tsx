@@ -53,7 +53,6 @@ import {
   getEstudianteById,
   getEstudianteIniciales,
   getEstudiantePrimerNombre,
-  isProtectedEstudiante,
   type Estudiante,
 } from "@/lib/students-storage";
 import { getPACIVigenteView } from "@/lib/paci/paci-view";
@@ -136,7 +135,6 @@ export default function EstudianteFichaPage() {
   const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
   const estudianteId = params.id;
-  const isProtectedStudent = isProtectedEstudiante(estudianteId);
   const [estudiante, setEstudiante] = useState<Estudiante | null>(() =>
     typeof window === "undefined" ? null : getEstudianteById(estudianteId)
   );
@@ -729,20 +727,14 @@ export default function EstudianteFichaPage() {
             </section>
 
             <section className="border-t border-slate-200/80 pt-6">
-              {isProtectedStudent ? (
-                <p className="text-xs text-slate-500">
-                  El estudiante base del sistema no puede eliminarse.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                >
-                  <span aria-hidden>🗑</span>
-                  {GLOSSARY.estudiante.eliminarAccionFicha}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowDeleteDialog(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              >
+                <span aria-hidden>🗑</span>
+                {GLOSSARY.estudiante.eliminarAccionFicha}
+              </button>
             </section>
           </div>
           )}

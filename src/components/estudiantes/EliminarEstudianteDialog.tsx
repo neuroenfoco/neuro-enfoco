@@ -2,7 +2,6 @@
 
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { deleteEstudianteCompleto } from "@/lib/delete-estudiante-completo";
-import { isProtectedEstudiante } from "@/lib/students-storage";
 import { useEffect, useId, useState } from "react";
 
 const CONFIRMATION_TEXT = GLOSSARY.estudiante.eliminarConfirmacionTexto;
@@ -26,8 +25,7 @@ export function EliminarEstudianteDialog({
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isProtected = isProtectedEstudiante(estudianteId);
-  const canConfirm = confirmText === CONFIRMATION_TEXT && !isProtected;
+  const canConfirm = confirmText === CONFIRMATION_TEXT;
 
   useEffect(() => {
     if (!open) return;
@@ -83,49 +81,41 @@ export function EliminarEstudianteDialog({
           </p>
         )}
 
-        {isProtected ? (
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            {GLOSSARY.estudiante.eliminarProtegido}
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          {GLOSSARY.estudiante.eliminarMensajeIntro}
+        </p>
+        <p className="mt-3 text-sm font-medium text-slate-700">
+          {GLOSSARY.estudiante.eliminarMensajeListaIntro}
+        </p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600">
+          {GLOSSARY.estudiante.eliminarMensajeItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm font-medium text-slate-700">
+          {GLOSSARY.estudiante.eliminarMensajeCierre}
+        </p>
+        <label className="mt-5 block">
+          <span className="text-xs font-medium text-slate-600">
+            {GLOSSARY.estudiante.eliminarConfirmacionLabel}
+          </span>
+          <span className="mt-1 block text-sm font-semibold text-slate-900">
+            {CONFIRMATION_TEXT}
+          </span>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(event) => setConfirmText(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={isDeleting}
+          />
+        </label>
+        {error && (
+          <p className="mt-3 text-sm text-rose-700" role="alert">
+            {error}
           </p>
-        ) : (
-          <>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              {GLOSSARY.estudiante.eliminarMensajeIntro}
-            </p>
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              {GLOSSARY.estudiante.eliminarMensajeListaIntro}
-            </p>
-            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600">
-              {GLOSSARY.estudiante.eliminarMensajeItems.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              {GLOSSARY.estudiante.eliminarMensajeCierre}
-            </p>
-            <label className="mt-5 block">
-              <span className="text-xs font-medium text-slate-600">
-                {GLOSSARY.estudiante.eliminarConfirmacionLabel}
-              </span>
-              <span className="mt-1 block text-sm font-semibold text-slate-900">
-                {CONFIRMATION_TEXT}
-              </span>
-              <input
-                type="text"
-                value={confirmText}
-                onChange={(event) => setConfirmText(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
-                autoComplete="off"
-                spellCheck={false}
-                disabled={isDeleting}
-              />
-            </label>
-            {error && (
-              <p className="mt-3 text-sm text-rose-700" role="alert">
-                {error}
-              </p>
-            )}
-          </>
         )}
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -140,7 +130,7 @@ export function EliminarEstudianteDialog({
           <button
             type="button"
             onClick={handleDelete}
-            disabled={!canConfirm || isDeleting || isProtected}
+            disabled={!canConfirm || isDeleting}
             className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {GLOSSARY.estudiante.eliminarBotonConfirmar}

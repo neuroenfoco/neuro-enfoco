@@ -7,8 +7,6 @@ export interface Estudiante {
   ingresoPieCompletadoEn?: string;
 }
 
-export const MARTINA_STUDENT_ID = "martina";
-
 const STORAGE_KEY = "neuro-enfoco-estudiantes";
 
 export function formatEstudianteFecha(date: Date = new Date()): string {
@@ -67,28 +65,9 @@ function writeEstudiantes(estudiantes: Estudiante[]): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(estudiantes));
 }
 
-function createMartinaSeed(): Estudiante {
-  return {
-    id: MARTINA_STUDENT_ID,
-    nombre: "Martina Ramírez",
-    curso: "3° Básico",
-    fechaCreacion: formatEstudianteFecha(),
-  };
-}
-
-export function ensureSeedEstudiantes(): void {
-  if (typeof window === "undefined") return;
-
-  const existing = readEstudiantesRaw();
-  if (existing.length > 0) return;
-
-  writeEstudiantes([createMartinaSeed()]);
-}
-
 export function getEstudiantes(): Estudiante[] {
   if (typeof window === "undefined") return [];
 
-  ensureSeedEstudiantes();
   return readEstudiantesRaw();
 }
 
@@ -102,8 +81,6 @@ export function saveEstudiante(input: {
   ingresoPieCompletado?: boolean;
   ingresoPieCompletadoEn?: string;
 }): Estudiante {
-  ensureSeedEstudiantes();
-
   const estudiante: Estudiante = {
     id: crypto.randomUUID(),
     nombre: input.nombre.trim(),
@@ -115,10 +92,6 @@ export function saveEstudiante(input: {
 
   writeEstudiantes([estudiante, ...getEstudiantes()]);
   return estudiante;
-}
-
-export function isProtectedEstudiante(estudianteId: string): boolean {
-  return estudianteId === MARTINA_STUDENT_ID;
 }
 
 /** Quita el registro del estudiante del storage (uso interno de cascada). */

@@ -64,7 +64,6 @@ import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-res
 import {
   getEstudianteIniciales,
   getEstudiantes,
-  MARTINA_STUDENT_ID,
   type Estudiante,
 } from "@/lib/students-storage";
 import Link from "next/link";
@@ -87,7 +86,7 @@ export default function NuevaIntervencionPage() {
   const router = useRouter();
 
   const [students, setStudents] = useState<Estudiante[]>([]);
-  const [selectedStudentId, setSelectedStudentId] = useState(MARTINA_STUDENT_ID);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [objetivosActivos, setObjetivosActivos] = useState<ObjetivoPIEResumen[]>(
     []
   );
@@ -240,6 +239,11 @@ export default function NuevaIntervencionPage() {
   }
 
   function persistIntervencionConEvidencia(): boolean {
+    if (!selectedStudentId.trim()) {
+      setSaveMessage(GLOSSARY.evaluacionCaptura.seleccionaEstudiante);
+      return false;
+    }
+
     const result = registrarIntervencionConEvidencia({
       evidencia: buildEvidenciaInput(),
       hallazgosPresentesIds: selectedHallazgoIds,
