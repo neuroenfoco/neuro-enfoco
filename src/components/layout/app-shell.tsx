@@ -1,6 +1,7 @@
 import {
   BrainIcon,
   CalendarIcon,
+  ChartIcon,
   LayoutDashboardIcon,
   TargetIcon,
   UsersIcon,
@@ -19,6 +20,7 @@ const NAV_ICONS: Record<AppNavId, NavIconComponent> = {
   estudiantes: UsersIcon,
   intervenciones: CalendarIcon,
   objetivos: TargetIcon,
+  reportes: ChartIcon,
 };
 
 type AppShellProps = {

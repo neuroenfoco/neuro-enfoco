@@ -5,6 +5,10 @@ import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
 import { ApoyoImplementadoOpcionalSection } from "@/components/objetivos/ApoyoImplementadoOpcionalSection";
 import { ApoyosConsolidadosSection } from "@/components/objetivos/ApoyosConsolidadosSection";
+import { ApoyosObjetivoPanel } from "@/components/apoyos/ApoyosObjetivoPanel";
+import { ObjetivoBarrerasApoyosPanel } from "@/components/apoyos/ObjetivoBarrerasApoyosPanel";
+import { ObjetivoSeguimientoPanel } from "@/components/objetivos/ObjetivoSeguimientoPanel";
+import type { ApoyoPIETipo } from "@/lib/apoyos/apoyos-types";
 import { getApoyosConsolidadosPorObjetivo } from "@/lib/apoyos-consolidados-objetivo";
 import {
   formatImpactoPromedio,
@@ -33,6 +37,10 @@ export default function ObjetivoPIEDetallePage() {
       ? null
       : getApoyosConsolidadosPorObjetivo(objetivoId)
   );
+  const [prefilledApoyo, setPrefilledApoyo] = useState<{
+    nombre: string;
+    tipo: ApoyoPIETipo;
+  } | null>(null);
 
   function refreshDetalle() {
     const base = getObjetivoPIEDetalle(objetivoId);
@@ -105,6 +113,28 @@ export default function ObjetivoPIEDetallePage() {
             Editar objetivo
           </Link>
         </div>
+
+        <div className="mt-6">
+          <ObjetivoSeguimientoPanel
+            objetivoId={objetivoId}
+            estudianteId={objetivo.estudianteId}
+          />
+        </div>
+
+        <ObjetivoBarrerasApoyosPanel
+          objetivoId={objetivoId}
+          onCrearApoyoDesdeSugerido={(apoyo) =>
+            setPrefilledApoyo({ nombre: apoyo.nombre, tipo: apoyo.tipo })
+          }
+        />
+
+        <ApoyosObjetivoPanel
+          objetivoId={objetivoId}
+          estudianteId={objetivo.estudianteId}
+          prefilled={prefilledApoyo}
+          onPrefilledConsumed={() => setPrefilledApoyo(null)}
+          onVinculosChanged={refreshDetalle}
+        />
 
         <section className="mt-6 rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50/40 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-800/80">

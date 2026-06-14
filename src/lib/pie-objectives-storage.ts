@@ -13,6 +13,9 @@ import {
   type Sesion,
 } from "@/lib/sessions-storage";
 import {
+  deleteApoyosByObjetivoId as deleteApoyosImplementadosByObjetivoId,
+} from "@/lib/apoyos/apoyos-storage";
+import {
   deleteApoyosByObjetivoId,
   deleteApoyosByObjetivoIds,
   getApoyosPorObjetivo,
@@ -459,6 +462,7 @@ export function deleteObjetivoPIE(objetivoId: string): boolean {
   if (next.length === existing.length) return false;
 
   deleteApoyosByObjetivoId(objetivoId);
+  deleteApoyosImplementadosByObjetivoId(objetivoId);
   deleteVinculosByObjetivoId(objetivoId);
   deletePACIObjetivosByObjetivoId(objetivoId);
   removeObjetivoFromIntervenciones(objetivoId);
@@ -480,6 +484,9 @@ export function deleteObjetivosPIEByEstudianteId(estudianteId: string): number {
 
   if (removedCount > 0) {
     deleteApoyosByObjetivoIds(objetivoIds);
+    for (const objetivoId of objetivoIds) {
+      deleteApoyosImplementadosByObjetivoId(objetivoId);
+    }
     for (const objetivoId of objetivoIds) {
       deleteVinculosByObjetivoId(objetivoId);
       deletePACIObjetivosByObjetivoId(objetivoId);

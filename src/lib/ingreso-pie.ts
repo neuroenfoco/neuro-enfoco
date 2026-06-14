@@ -14,7 +14,9 @@ import {
   normalizeHallazgoNombre,
   type HallazgoTipo,
 } from "@/lib/perfil-hallazgos-storage";
-import { saveEstudiante } from "@/lib/students-storage";
+import {
+  getEstudianteById,
+} from "@/lib/students-storage";
 
 /** Marca evaluaciones originadas en el wizard de Ingreso PIE (A3). */
 export const INGRESO_PIE_EVALUACION_ORIGEN = "ingreso_pie";
@@ -38,7 +40,7 @@ export type IngresoPieMarcoInput = {
 };
 
 export type CompletarIngresoPIEInput = {
-  estudiante: { nombre: string; curso: string };
+  estudianteId: string;
   marco: IngresoPieMarcoInput;
   hallazgos: HallazgoIngresoBorrador[];
 };
@@ -148,29 +150,22 @@ export function completarIngresoPIE(
     return { ok: false, error: "Solo disponible en el cliente." };
   }
 
-  const nombre = input.estudiante.nombre.trim();
-  const curso = input.estudiante.curso.trim();
+  const estudianteId = input.estudianteId.trim();
 
-  if (!nombre) {
-    return { ok: false, error: "El nombre del estudiante es obligatorio." };
+  if (!estudianteId) {
+    return { ok: false, error: "Debes seleccionar un estudiante." };
   }
 
-  if (!curso) {
-    return { ok: false, error: "El curso del estudiante es obligatorio." };
+  const estudiante = getEstudianteById(estudianteId);
+
+  if (!estudiante) {
+    return { ok: false, error: "El estudiante seleccionado no existe." };
   }
 
   const fechaError = validateFechasMarco(input.marco);
   if (fechaError) {
     return { ok: false, error: fechaError };
   }
-
-  const completadoEn = new Date().toISOString();
-  const estudiante = saveEstudiante({
-    nombre,
-    curso,
-    ingresoPieCompletado: true,
-    ingresoPieCompletadoEn: completadoEn,
-  });
 
   const marco = saveMarcoInstitucionalPIE({
     estudianteId: estudiante.id,

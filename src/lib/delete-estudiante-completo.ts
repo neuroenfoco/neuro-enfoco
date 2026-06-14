@@ -2,6 +2,8 @@
  * Eliminación en cascada de un estudiante y todos sus registros locales.
  * Punto de entrada único para la UI; no dispersar lógica de borrado en componentes.
  */
+import { deleteVinculosByEstudianteId as deleteVinculosApoyoIntervencionByEstudianteId } from "@/lib/apoyos/apoyo-intervencion-storage";
+import { deleteApoyosByEstudianteId as deleteApoyosImplementadosByEstudianteId } from "@/lib/apoyos/apoyos-storage";
 import {
   deleteIntervencionesByEstudianteId,
   getIntervencionesByEstudianteId,
@@ -45,6 +47,7 @@ export type DeleteEstudianteCompletoEstadisticas = {
   observaciones: number;
   objetivosPie: number;
   apoyosPie: number;
+  apoyosImplementados: number;
   participacionesProfesional: number;
   evaluacionesIntegrales: number;
   participacionesEvaluacionIntegral: number;
@@ -94,6 +97,7 @@ export function deleteEstudianteCompleto(
     observaciones: countObservacionesByEstudianteId(trimmedId),
     objetivosPie: getObjetivosPIEByEstudianteId(trimmedId).length,
     apoyosPie: countApoyosPiePorEstudiante(trimmedId),
+    apoyosImplementados: 0,
     participacionesProfesional: 0,
     evaluacionesIntegrales: 0,
     participacionesEvaluacionIntegral: 0,
@@ -105,6 +109,7 @@ export function deleteEstudianteCompleto(
 
   // 1. Intervenciones → observaciones por intervención + evidencias (Sesion) vinculadas
   deleteIntervencionesByEstudianteId(trimmedId);
+  deleteVinculosApoyoIntervencionByEstudianteId(trimmedId);
 
   // 2. Evidencias huérfanas sin intervencionId
   deleteSessionsByEstudianteId(trimmedId);
@@ -113,6 +118,8 @@ export function deleteEstudianteCompleto(
   deleteHallazgosByEstudianteId(trimmedId);
 
   // 4. Objetivos PIE + apoyos implementados por objetivo
+  estadisticas.apoyosImplementados =
+    deleteApoyosImplementadosByEstudianteId(trimmedId);
   deleteObjetivosPIEByEstudianteId(trimmedId);
   deleteVinculosByEstudianteId(trimmedId);
 

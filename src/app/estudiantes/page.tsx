@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EliminarEstudianteDialog } from "@/components/estudiantes/EliminarEstudianteDialog";
 import { GLOSSARY } from "@/lib/copy/glossary";
+import { ROUTES } from "@/lib/copy/navigation";
 import {
   getEstudianteIniciales,
   getEstudiantes,
@@ -69,12 +70,20 @@ export default function EstudiantesPage() {
               {GLOSSARY.estudiante.listadoSubtitulo}
             </p>
           </div>
-          <Link
-            href="/estudiantes/ingreso"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
-          >
-            {GLOSSARY.ingresoPie.titulo}
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Link
+              href={ROUTES.estudiantesNuevo}
+              className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 transition hover:from-teal-700 hover:to-emerald-700"
+            >
+              {GLOSSARY.estudiante.nuevoCta}
+            </Link>
+            <Link
+              href={ROUTES.estudiantesIngreso}
+              className="inline-flex items-center justify-center rounded-lg border border-teal-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+            >
+              {GLOSSARY.ingresoPie.titulo}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -88,6 +97,27 @@ export default function EstudiantesPage() {
           </p>
         )}
 
+        {students.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-slate-600">
+              Aún no hay estudiantes registrados.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href={ROUTES.estudiantesNuevo}
+                className="inline-flex rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
+              >
+                {GLOSSARY.estudiante.nuevoCta}
+              </Link>
+              <Link
+                href={ROUTES.estudiantesIngreso}
+                className="inline-flex rounded-lg border border-teal-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-800"
+              >
+                {GLOSSARY.ingresoPie.titulo}
+              </Link>
+            </div>
+          </div>
+        ) : (
         <ul className="space-y-3">
           {students.map((student) => (
             <li key={student.id}>
@@ -150,6 +180,7 @@ export default function EstudiantesPage() {
             </li>
           ))}
         </ul>
+        )}
       </main>
 
       {deleteTarget && (

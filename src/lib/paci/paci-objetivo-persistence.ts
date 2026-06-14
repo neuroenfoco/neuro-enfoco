@@ -1,4 +1,5 @@
 import type { PACIObjetivo } from "@/lib/paci/paci-types";
+import { getStorageAdapter } from "@/lib/core/browser-storage-adapter";
 
 export const PACI_OBJETIVO_STORAGE_KEY = "neuro-enfoco-paci-objetivos";
 
@@ -18,37 +19,24 @@ export function isPACIObjetivo(value: unknown): value is PACIObjetivo {
 }
 
 export function readPACIObjetivos(): PACIObjetivo[] {
-  if (typeof window === "undefined") return [];
+  const parsed = getStorageAdapter().read<unknown>(PACI_OBJETIVO_STORAGE_KEY);
 
-  try {
-    const raw = window.localStorage.getItem(PACI_OBJETIVO_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    const valid: PACIObjetivo[] = [];
-    for (const item of parsed) {
-      if (!isPACIObjetivo(item)) continue;
-      valid.push(item);
-    }
-
-    if (
-      process.env.NODE_ENV === "development" &&
-      valid.length !== parsed.length
-    ) {
-      console.debug(
-        "[readPACIObjetivos] registros descartados:",
-        parsed.length - valid.length
-      );
-    }
-
-    return valid;
-  } catch {
-    return [];
+  const valid: PACIObjetivo[] = [];
+  for (const item of parsed) {
+    if (!isPACIObjetivo(item)) continue;
+    valid.push(item);
   }
+
+  if (process.env.NODE_ENV === "development" && valid.length !== parsed.length) {
+    console.debug(
+      "[readPACIObjetivos] registros descartados:",
+      parsed.length - valid.length
+    );
+  }
+
+  return valid;
 }
 
 export function writePACIObjetivos(items: PACIObjetivo[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(PACI_OBJETIVO_STORAGE_KEY, JSON.stringify(items));
+  getStorageAdapter().write(PACI_OBJETIVO_STORAGE_KEY, items);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { EstudianteObjetivosSeguimientoSection } from "@/components/estudiante/EstudianteObjetivosSeguimientoSection";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   getApoyosConsolidadosPorObjetivo,
@@ -29,9 +30,7 @@ export function EstudianteObjetivosTab({
   estudianteId,
   estudiantePrimerNombre,
 }: EstudianteObjetivosTabProps) {
-  const [ficha, setFicha] = useState<EstudianteObjetivosFicha | null>(() =>
-    typeof window === "undefined" ? null : getEstudianteObjetivosFicha(estudianteId)
-  );
+  const [ficha, setFicha] = useState<EstudianteObjetivosFicha | null>(null);
 
   useEffect(() => {
     function refresh() {
@@ -52,6 +51,8 @@ export function EstudianteObjetivosTab({
 
   return (
     <div className="space-y-8">
+      <EstudianteObjetivosSeguimientoSection estudianteId={estudianteId} />
+
       <section className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50/70 via-white to-teal-50/30 p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

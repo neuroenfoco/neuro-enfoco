@@ -3,6 +3,7 @@ import type {
   EvaluacionIntegralEstado,
   EvaluacionIntegralTipo,
 } from "@/lib/evaluacion-integral/evaluacion-integral-types";
+import { getStorageAdapter } from "@/lib/core/browser-storage-adapter";
 
 export const EVALUACION_INTEGRAL_STORAGE_KEY =
   "neuro-enfoco-evaluaciones-integrales";
@@ -64,27 +65,16 @@ function isEvaluacionIntegral(value: unknown): value is EvaluacionIntegral {
 }
 
 export function readEvaluacionesIntegrales(): EvaluacionIntegral[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.localStorage.getItem(EVALUACION_INTEGRAL_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isEvaluacionIntegral);
-  } catch {
-    return [];
-  }
+  const parsed = getStorageAdapter().read<unknown>(
+    EVALUACION_INTEGRAL_STORAGE_KEY
+  );
+  return parsed.filter(isEvaluacionIntegral);
 }
 
 export function writeEvaluacionesIntegrales(
   items: EvaluacionIntegral[]
 ): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    EVALUACION_INTEGRAL_STORAGE_KEY,
-    JSON.stringify(items)
-  );
+  getStorageAdapter().write(EVALUACION_INTEGRAL_STORAGE_KEY, items);
 }
 
 export function getEvaluacionIntegralById(

@@ -59,6 +59,7 @@ export const GLOSSARY = {
     estudiantes: "Estudiantes",
     intervenciones: "Intervenciones",
     objetivos: "Objetivos",
+    reportes: "Reportes",
   },
 
   profesional: {
@@ -513,6 +514,14 @@ export const GLOSSARY = {
     observacionesInstitucionales: "Observaciones institucionales",
     sinHallazgosAviso:
       "Puedes continuar sin registrar hallazgos ahora y completarlos después en el Perfil Base.",
+    seleccionaEstudiante: "Estudiante",
+    selectorEstudiantePlaceholder: "Seleccionar estudiante",
+    sinEstudiantes:
+      "No existen estudiantes registrados.",
+    crearEstudianteCta: "Crear estudiante",
+    errorEstudianteRequerido: "Selecciona un estudiante.",
+    estudianteNombreLabel: "Nombre",
+    estudianteCursoLabel: "Curso",
     confirmarSubtitulo:
       "Este conocimiento quedará en el Perfil Base institucional del estudiante.",
     completar: "Completar ingreso PIE",
@@ -545,6 +554,8 @@ export const GLOSSARY = {
       "Registra los apoyos que el equipo implementó o estuvieron disponibles durante esta experiencia. No implica efectividad ni reemplaza la observación profesional.",
     queFacilitaron: "Apoyos que facilitaron la participación",
     deParticipacion: "Apoyos de participación",
+    sugeridos:
+      "Apoyos sugeridos según la dimensión PIE proyectada; orientación pedagógica que el equipo adapta al contexto.",
     suelenFacilitar: "Apoyos de participación registrados con frecuencia",
     yAjustes: "Apoyos y ajustes que facilitan la participación",
     sinRegistrados:
@@ -599,6 +610,128 @@ export const GLOSSARY = {
     },
   },
 
+  barrerasApoyos: {
+    titulo: "Barreras y apoyos",
+    subtitulo:
+      "Barreras identificadas desde evaluación integral y apoyos sugeridos según la dimensión PIE de cada objetivo.",
+    barreras: "Barreras",
+    apoyos: "Apoyos",
+    apoyosSugeridos: "Apoyos sugeridos",
+    barrerasIdentificadas: "Barreras identificadas",
+    barrerasRelacionadas: "Barreras relacionadas",
+    apoyosRecomendados: "Apoyos recomendados",
+    apoyosRecomendadosAyuda:
+      "Orientación pedagógica según dimensión proyectada; el equipo decide qué implementar.",
+    porQueEsteObjetivo: "¿Por qué este objetivo?",
+    conclusionesRelacionadas: "Conclusiones evaluativas relacionadas",
+    trazabilidad:
+      "La trazabilidad evaluativa conecta hallazgos, conclusiones y objetivos PIE para fundamentar la planificación pedagógica.",
+    sinBarreras:
+      "Aún no hay barreras identificadas desde evaluación vinculada a este objetivo.",
+    sinApoyos:
+      "No hay apoyos sugeridos para la dimensión proyectada de este objetivo.",
+    sinObjetivos: "Aún no hay objetivos PIE para analizar.",
+    sinSustentoEvaluativo:
+      "Sin conclusiones evaluativas vinculadas. La planificación se orienta desde el equipo.",
+    origenConclusion: "Conclusión",
+    origenHallazgo: "Hallazgo",
+    verDetalleObjetivo: "Ver detalle del objetivo →",
+    verEvaluacion: "Ver evaluación integral →",
+    irEvaluacion: "Ir a evaluación integral →",
+    resumenBarreras: "Barreras identificadas",
+    resumenApoyos: "Apoyos sugeridos",
+    resumenConSustento: "Con sustento evaluativo",
+    resumenSinSustento: "Sin sustento evaluativo",
+    tipoApoyo: (tipo: string) => {
+      switch (tipo) {
+        case "adaptacion_acceso":
+          return "Adaptación de acceso";
+        case "adaptacion_curricular":
+          return "Adaptación curricular";
+        case "apoyo_emocional":
+          return "Apoyo emocional";
+        case "apoyo_sensorial":
+          return "Apoyo sensorial";
+        case "apoyo_comunicacion":
+          return "Apoyo comunicacional";
+        case "apoyo_conductual":
+          return "Apoyo conductual";
+        default:
+          return "Otro apoyo";
+      }
+    },
+  },
+
+  apoyosImplementados: {
+    titulo: "Apoyos implementados",
+    subtituloObjetivo:
+      "Apoyos que el establecimiento planifica e implementa para este objetivo PIE.",
+    subtituloEstudiante:
+      "Planificación institucional de apoyos vinculados al estudiante y sus objetivos.",
+    nuevoApoyo: "Registrar apoyo",
+    guardar: "Guardar apoyo",
+    guardarCambios: "Guardar cambios",
+    editarApoyo: "Editar apoyo",
+    editar: "Editar",
+    eliminar: "Eliminar",
+    cancelar: "Cancelar",
+    confirmarEliminar: "¿Eliminar este apoyo implementado?",
+    sinApoyos: "Aún no hay apoyos implementados registrados.",
+    crearDesdeSugerido: "Crear apoyo implementado",
+    verObjetivo: "Ver objetivo →",
+    campoNombre: "Nombre del apoyo",
+    campoTipo: "Tipo de apoyo",
+    campoDescripcion: "Descripción",
+    responsable: "Responsable",
+    frecuencia: "Frecuencia",
+    frecuenciaPlaceholder: "Ej.: Diario en aula",
+    estadoApoyo: "Estado del apoyo",
+    estadoActivo: "Activo",
+    estadoSuspendido: "Suspendido",
+    estadoFinalizado: "Finalizado",
+    grupoActivos: "Apoyos activos",
+    grupoSuspendidos: "Apoyos suspendidos",
+    grupoFinalizados: "Apoyos finalizados",
+    intervencionesVinculadas: "Intervenciones vinculadas",
+    apoyosRelacionados: "Apoyos relacionados",
+    actividadApoyo: "Actividad del apoyo",
+    sinActividad: "Sin actividad registrada",
+    metricaIntervenciones: "Intervenciones",
+    metricaEvidencias: "Evidencias",
+    ultimaIntervencion: "Última intervención",
+    ultimaActividad: "Última actividad",
+    vincularIntervencion: "Vincular intervención",
+    vincularApoyo: "Vincular apoyo implementado",
+    seleccionarIntervencion: "Seleccionar intervención",
+    seleccionarApoyo: "Seleccionar apoyo implementado",
+    vincular: "Vincular",
+    desvincular: "Desvincular",
+    sinIntervencionesVinculadas: "Sin intervenciones vinculadas a este apoyo.",
+    sinApoyosRelacionados: "Sin apoyos implementados relacionados.",
+    confirmarDesvincularIntervencion:
+      "¿Desvincular esta intervención del apoyo implementado?",
+    confirmarDesvincularApoyo:
+      "¿Desvincular este apoyo implementado de la intervención?",
+    efectividadOperacional: {
+      titulo: "Efectividad operacional",
+      subtitulo:
+        "Nivel de actividad y evidencia registrada en intervenciones vinculadas. No evalúa el éxito educativo del apoyo.",
+      sinActividad: "Sin actividad",
+      actividadInicial: "Actividad inicial",
+      enDesarrollo: "En desarrollo",
+      conEvidencia: "Con evidencia",
+      estadoOperacional: "Estado operacional",
+      observacionSinActividad:
+        "Sin intervenciones ni evidencias vinculadas a este apoyo.",
+      observacionActividadInicial:
+        "Hay intervenciones vinculadas, pero aún no se registran evidencias.",
+      observacionEnDesarrollo:
+        "Intervenciones y evidencias en desarrollo; la trazabilidad operacional avanza.",
+      observacionConEvidencia:
+        "Intervenciones y evidencias consolidadas en el registro institucional.",
+    },
+  },
+
   barreras: {
     observadas: "Condiciones que dificultaron la participación",
     observadasSubtitulo:
@@ -612,6 +745,8 @@ export const GLOSSARY = {
       "Condiciones que dificultan la participación (frecuentes)",
     loQuePuedeDificultarSub:
       "Situaciones documentadas en intervenciones; orientan ajustes del entorno y la actividad",
+    identificadas:
+      "Barreras identificadas desde evaluación integral que orientan la planificación pedagógica.",
     sinObservadas:
       "Aún no existen condiciones que dificulten la participación registradas.",
     trabajoGrupal:
@@ -691,6 +826,19 @@ export const GLOSSARY = {
         "Contexto adicional para el equipo (opcional).",
       guardar: "Guardar objetivo",
       guardarCambios: "Guardar cambios",
+    },
+    seguimiento: {
+      titulo: "Seguimiento del objetivo",
+      intervencionesRegistradas: "Intervenciones registradas",
+      evidenciasRegistradas: "Evidencias registradas",
+      ultimaActividad: "Última actividad",
+      sinActividad: "Sin actividad registrada",
+      verObjetivo: "Ver detalle del objetivo →",
+      registrarSeguimiento: "Registrar intervención →",
+      estadoActivo: "Activo",
+      estadoAtencion: "Atención",
+      estadoRiesgo: "Riesgo",
+      estadoSinSeguimiento: "Sin seguimiento",
     },
   },
 
@@ -826,10 +974,97 @@ export const GLOSSARY = {
     eliminarAccionListado: "Eliminar",
     eliminarAccionFicha: "Eliminar estudiante",
     eliminarExito: "Estudiante eliminado correctamente.",
+    resumenIntegralTitulo: "Seguimiento integral",
+    kpiObjetivosPieActivos: "Objetivos PIE activos",
+    kpiIntervencionesRegistradas: "Intervenciones registradas",
+    kpiEvaluacionesIntegrales: "Evaluaciones integrales",
+    kpiPaciEstado: "Estado PACI",
+    paciEstadoSinPaci: "Sin PACI",
+    timelineTitulo: "Actividad reciente",
+    timelineSubtitulo:
+      "Evaluaciones, intervenciones y cambios de PACI en orden cronológico.",
+    timelineVacio:
+      "Aún no hay actividad registrada para construir una línea de tiempo.",
+    timelineTipoEvaluacion: "Evaluación",
+    timelineTipoIntervencion: "Intervención",
+    timelineTipoPaci: "PACI",
+    timelineEvaluacionResumen: (tipo: string, estado: string) =>
+      `${tipo} · ${estado}`,
+    timelineIntervencionResumen: (tipo: string) =>
+      `Intervención de ${tipo.toLowerCase()} registrada.`,
+    timelineIntervencionConLogro: (tipo: string, logro: string) =>
+      `${tipo}: ${logro}`,
+    timelinePaciCreado: (periodo: string) =>
+      `Borrador PACI creado para ${periodo}.`,
+    timelinePaciVigente: (periodo: string) =>
+      `PACI declarado vigente para ${periodo}.`,
+    timelinePaciCerrado: (periodo: string) =>
+      `PACI cerrado para ${periodo}.`,
+    accionesSugeridasTitulo: "Próximas acciones sugeridas",
+    accionesSugeridasSubtitulo:
+      "Orientaciones según el estado del proceso pedagógico del estudiante.",
+    accionesSugeridasVacio:
+      "El seguimiento está al día según los registros actuales.",
+    accionEvaluacionTitulo: "Iniciar evaluación integral",
+    accionEvaluacionDescripcion:
+      "Aún no hay evaluación integral registrada. Inicia el proceso evaluativo interdisciplinario.",
+    accionEvaluacionCta: "Ir a evaluación integral",
+    accionObjetivosTitulo: "Definir objetivos PIE",
+    accionObjetivosDescripcion:
+      "Hay evaluación registrada pero sin objetivos PIE. Planifica objetivos a partir de las conclusiones evaluativas.",
+    accionObjetivosCta: "Ir a objetivos",
+    accionPaciTitulo: "Crear PACI",
+    accionPaciDescripcion:
+      "Existen objetivos PIE pero aún no hay PACI. Articula evaluación y objetivos en un documento institucional.",
+    accionPaciCta: "Crear PACI",
+    accionSeguimientoTitulo: "Registrar seguimiento",
+    accionSeguimientoDescripcion:
+      "El PACI está vigente y no hay intervenciones recientes. Documenta el seguimiento pedagógico del período.",
+    accionSeguimientoCta: "Registrar intervención",
+    accionObjetivoSinSeguimientoTitulo: "Registrar intervención por objetivo",
+    accionObjetivoSinSeguimientoDescripcion:
+      "Hay objetivos PIE sin intervenciones asociadas. Documenta el seguimiento pedagógico.",
+    accionObjetivoSinSeguimientoCta: "Ir a intervenciones",
+    accionObjetivoRiesgoTitulo: "Seguimiento prioritario",
+    accionObjetivoRiesgoDescripcion:
+      "Hay objetivos con más de 60 días sin actividad registrada. Revisa el seguimiento.",
+    accionObjetivoRiesgoCta: "Revisar seguimiento",
+    accionObjetivoSinEvidenciasTitulo: "Registrar evidencias",
+    accionObjetivoSinEvidenciasDescripcion:
+      "Hay objetivos con intervenciones pero sin evidencias vinculadas.",
+    accionObjetivoSinEvidenciasCta: "Registrar evidencias",
+    seguimientoObjetivos: {
+      titulo: "Seguimiento de objetivos",
+      subtitulo:
+        "Intervenciones y evidencias consolidadas por objetivo PIE activo.",
+      irIntervenciones: "Ir a intervenciones →",
+      sinObjetivos: "Aún no hay objetivos PIE para seguir.",
+      resumenActivos: "Objetivos activos",
+      resumenConSeguimiento: "Objetivos con seguimiento",
+      resumenSeguimientoActivo: "Objetivos con seguimiento activo",
+      resumenEnAtencion: "En atención",
+      resumenEnRiesgo: "En riesgo",
+    },
     fichaEnfoque:
       "Ficha del estudiante · enfoque basado en fortalezas",
     listadoSubtitulo:
       "Fichas con enfoque en fortalezas, participación y bienestar escolar",
+    nuevoCta: "Nuevo estudiante",
+    nuevoTitulo: "Nuevo estudiante",
+    nuevoSubtitulo:
+      "Registra datos básicos para abrir la ficha de seguimiento. No requiere ingreso PIE.",
+    nuevoNotaIngresoPie:
+      "Si ya existe evaluación integral previa y debes documentar el ingreso PIE, usa",
+    nuevoGuardar: "Crear estudiante",
+    nuevoCancelar: "Cancelar",
+    guardando: "Guardando…",
+    volverListado: "Volver a estudiantes",
+    labelNombre: "Nombre del estudiante",
+    labelCurso: "Curso",
+    placeholderNombre: "Ej: Tomás Herrera",
+    placeholderCurso: "Ej: 4° Básico",
+    errorNombreRequerido: "Ingresa el nombre del estudiante.",
+    errorCursoRequerido: "Ingresa el curso del estudiante.",
     quienEsPregunta: "Conocer al estudiante",
     quienEsTitulo: (nombre: string) => `Perfil de ${nombre}`,
     quienEsNota:
@@ -842,24 +1077,147 @@ export const GLOSSARY = {
     cursoPie: "5° básico · PIE",
   },
 
-  dashboard: {
-    titulo: "Centro de bienestar y seguimiento",
+  reportes: {
+    titulo: "Reportes institucionales",
     subtitulo:
-      "Seguimiento de bienestar, fortalezas, intervenciones y evidencias PIE y Ley 21.545 en un perfil socioemocional evolutivo.",
-    avisoMetricasDemo:
-      "Las métricas de esta vista son demostrativas y no reflejan los registros guardados en este navegador.",
-    sinDatosInstitucionales:
-      "Aún no hay estudiantes ni intervenciones registradas. Las métricas demostrativas se ocultan hasta que existan datos reales.",
+      "Vistas consolidadas de estado, seguimiento de objetivos, apoyos implementados y alertas a partir de los registros del equipo PIE.",
+    estadoInstitucional: {
+      titulo: "Estado institucional",
+      subtitulo:
+        "Indicadores agregados de estudiantes, evaluaciones, objetivos PIE, PACI y apoyos implementados.",
+    },
+    seguimientoObjetivos: {
+      titulo: "Seguimiento de objetivos",
+      subtitulo:
+        "Estado de seguimiento por objetivo PIE activo según intervenciones y evidencias registradas.",
+      exportarCsv: "Exportar CSV",
+      sinRegistros: "No hay objetivos PIE registrados.",
+      columnaEstudiante: "Estudiante",
+      columnaObjetivo: "Objetivo",
+      columnaEstado: "Estado de seguimiento",
+      columnaUltimaActividad: "Última actividad",
+      columnaIntervenciones: "Intervenciones",
+      columnaEvidencias: "Evidencias",
+    },
+    apoyosImplementados: {
+      titulo: "Apoyos implementados",
+      subtitulo:
+        "Apoyos planificados e implementados con trazabilidad operacional de intervenciones y evidencias.",
+      exportarCsv: "Exportar CSV",
+      sinRegistros: "No hay apoyos implementados registrados.",
+      columnaEstudiante: "Estudiante",
+      columnaApoyo: "Apoyo",
+      columnaResponsable: "Responsable",
+      columnaFrecuencia: "Frecuencia",
+      columnaEstado: "Estado",
+      columnaIntervenciones: "Intervenciones",
+      columnaEvidencias: "Evidencias",
+      columnaEstadoOperacional: "Estado operacional",
+    },
+    alertas: {
+      titulo: "Alertas institucionales",
+      subtitulo:
+        "Situaciones agrupadas que requieren revisión del equipo según trazabilidad registrada.",
+      exportarCsv: "Exportar CSV",
+      sinAlertas: "No hay alertas institucionales en este momento.",
+      grupoEvaluacionPendiente: "Evaluación pendiente",
+      grupoSeguimiento: "Seguimiento",
+      grupoApoyos: "Apoyos",
+      grupoPaci: "PACI",
+      columnaGrupo: "Grupo",
+      columnaTipo: "Tipo",
+      columnaTitulo: "Título",
+      columnaDescripcion: "Descripción",
+      columnaEstudiante: "Estudiante",
+    },
+    estadoVacio: {
+      titulo: "Sin datos para reportes",
+      descripcion:
+        "Registra estudiantes y su trazabilidad PIE para generar reportes institucionales.",
+      irEstudiantes: "Ir a estudiantes",
+    },
+  },
+
+  dashboard: {
+    titulo: "Gestión institucional PIE",
+    subtitulo:
+      "Indicadores, alertas y actividad reciente del equipo PIE a partir de evaluaciones, objetivos, intervenciones y PACI registrados.",
     irIngresoPie: "Iniciar ingreso PIE",
+    irNuevoEstudiante: "Nuevo estudiante",
     verEstudiantes: "Ver estudiantes",
-    seccionDemo: "Vista demostrativa",
-    logroRegulacion:
-      "Se observó uso de un apoyo de regulación de forma autónoma.",
-    logroFrustracion:
-      "Mostró avances en la regulación ante situaciones desafiantes.",
-    logroEmociones:
-      "Se identificaron emociones durante una intervención.",
-    logrosRecientes: "Logros recientes de estudiantes",
+    estadoVacio: {
+      titulo: "Bienvenido a Neuro Enfoco",
+      descripcion: "No existen estudiantes registrados.",
+    },
+    indicadores: {
+      titulo: "Indicadores institucionales",
+      subtitulo:
+        "Resumen operativo de estudiantes, evaluaciones, objetivos PIE, PACI e intervenciones.",
+      estudiantesActivos: "Estudiantes activos",
+      evaluacionesIntegrales: "Evaluaciones integrales",
+      estudiantesSinEvaluacion: "Sin evaluación integral",
+      objetivosActivos: "Objetivos PIE activos",
+      objetivosConSeguimiento: "Objetivos con seguimiento",
+      objetivosEnRiesgo: "Objetivos en riesgo",
+      pacisVigentes: "PACI vigentes",
+      pacisBorrador: "PACI en borrador",
+      intervencionesUltimoMes: "Intervenciones (30 días)",
+      evidenciasUltimoMes: "Evidencias (30 días)",
+      apoyosActivos: "Apoyos implementados activos",
+      apoyosSuspendidos: "Apoyos implementados suspendidos",
+      apoyosFinalizados: "Apoyos implementados finalizados",
+      apoyosConActividad: "Apoyos con actividad vinculada",
+      apoyosSinActividad: "Apoyos sin actividad vinculada",
+      apoyosConEvidencia: "Apoyos con evidencia operacional",
+    },
+    alertas: {
+      titulo: "Alertas prioritarias",
+      subtitulo:
+        "Situaciones que requieren revisión del equipo según seguimiento y trazabilidad registrada.",
+      sinAlertas: "No hay alertas prioritarias en este momento.",
+      tituloObjetivoRiesgo: "Objetivo en riesgo",
+      descripcionObjetivoRiesgo: (nombre: string) =>
+        `El objetivo «${nombre}» supera 60 días sin actividad documentada.`,
+      tituloObjetivoSinSeguimiento: "Objetivo sin seguimiento",
+      descripcionObjetivoSinSeguimiento: (nombre: string) =>
+        `El objetivo «${nombre}» no tiene intervenciones registradas.`,
+      tituloEvaluacionPendiente: "Evaluación pendiente",
+      descripcionEvaluacionPendiente: (nombre: string) =>
+        `${nombre} aún no cuenta con evaluación integral registrada.`,
+      tituloPaciBorrador: "PACI en borrador prolongado",
+      descripcionPaciBorrador: (periodo: string, estudiante: string) =>
+        `PACI ${periodo} de ${estudiante} lleva más de 30 días sin declararse vigente.`,
+      tituloApoyoSinActividadProlongada: "Apoyo activo sin actividad",
+      descripcionApoyoSinActividadProlongada: (nombre: string) =>
+        `El apoyo «${nombre}» lleva más de 30 días activo sin intervenciones ni evidencias vinculadas.`,
+      tituloApoyoActividadInicialProlongada: "Apoyo con actividad inicial prolongada",
+      descripcionApoyoActividadInicialProlongada: (nombre: string) =>
+        `El apoyo «${nombre}» lleva más de 60 días con intervenciones vinculadas pero sin evidencias registradas.`,
+      tipoCritica: "Crítica",
+      tipoAtencion: "Atención",
+      tipoEvaluacionPendiente: "Evaluación pendiente",
+      tipoSeguimientoAdministrativo: "Seguimiento administrativo",
+      verEstudiante: "Ver estudiante →",
+    },
+    actividadReciente: {
+      titulo: "Actividad reciente",
+      subtitulo:
+        "Últimos registros de evaluaciones, intervenciones y cambios de estado PACI.",
+      sinActividad: "Aún no hay actividad institucional registrada.",
+      resumenIntervencion: (tipo: string, estudiante: string) =>
+        `${tipo} · ${estudiante}`,
+      tipoPaciVigente: "PACI vigente",
+      tipoPaciCerrado: "PACI cerrado",
+    },
+    barrerasApoyos: {
+      titulo: "Barreras y apoyos",
+      subtitulo:
+        "Agregado institucional de barreras identificadas, apoyos sugeridos y sustento evaluativo en objetivos PIE.",
+      barrerasIdentificadas: "Barreras identificadas",
+      apoyosSugeridos: "Apoyos sugeridos",
+      objetivosConSustento: "Con sustento evaluativo",
+      objetivosSinSustento: "Sin sustento evaluativo",
+    },
   },
 
   insights: {
