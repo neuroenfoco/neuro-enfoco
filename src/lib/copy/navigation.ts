@@ -3,9 +3,11 @@ import { GLOSSARY } from "@/lib/copy/glossary";
 export type AppNavId =
   | "dashboard"
   | "estudiantes"
+  | "profesionales"
   | "intervenciones"
   | "objetivos"
-  | "reportes";
+  | "reportes"
+  | "configuracion";
 
 export const ROUTES = {
   dashboard: "/",
@@ -29,6 +31,7 @@ export const ROUTES = {
   estudiantePaciTab: (estudianteId: string) =>
     `/estudiantes/${estudianteId}?tab=paci`,
   reportes: "/reportes",
+  configuracionUsuarios: "/configuracion/usuarios",
 } as const;
 
 export type AppNavItem = {
@@ -38,7 +41,16 @@ export type AppNavItem = {
   active: boolean;
 };
 
-export function getAppNavItems(activeId: AppNavId): AppNavItem[] {
+type GetAppNavItemsOptions = {
+  showConfiguracion?: boolean;
+};
+
+export function getAppNavItems(
+  activeId: AppNavId,
+  options: GetAppNavItemsOptions = {},
+): AppNavItem[] {
+  const { showConfiguracion = false } = options;
+
   return [
     {
       id: "dashboard",
@@ -51,6 +63,12 @@ export function getAppNavItems(activeId: AppNavId): AppNavItem[] {
       label: GLOSSARY.nav.estudiantes,
       href: ROUTES.estudiantes,
       active: activeId === "estudiantes",
+    },
+    {
+      id: "profesionales",
+      label: GLOSSARY.nav.profesionales,
+      href: ROUTES.profesionales,
+      active: activeId === "profesionales",
     },
     {
       id: "intervenciones",
@@ -70,5 +88,15 @@ export function getAppNavItems(activeId: AppNavId): AppNavItem[] {
       href: ROUTES.reportes,
       active: activeId === "reportes",
     },
+    ...(showConfiguracion
+      ? [
+          {
+            id: "configuracion" as const,
+            label: GLOSSARY.nav.configuracion,
+            href: ROUTES.configuracionUsuarios,
+            active: activeId === "configuracion",
+          },
+        ]
+      : []),
   ];
 }

@@ -15,18 +15,32 @@ import {
 import { getConclusionEvaluativaById } from "@/lib/evaluacion-integral/conclusion-evaluativa-storage";
 import { linkConclusionesToObjetivo } from "@/lib/evaluacion-integral/vinculo-conclusion-objetivo-storage";
 import { mapConclusionDimensionToObjetivoDimension } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
-import { getEstudiantes } from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
+import type { Estudiante } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+async function loadEstudiantesIncludingId(
+  estudianteId?: string
+): Promise<Estudiante[]> {
+  const repo = getEstudiantesRepositoryAsync();
+  const list = await repo.getAll();
+  const trimmed = estudianteId?.trim();
+  if (!trimmed || list.some((item) => item.id === trimmed)) {
+    return list;
+  }
+
+  const selected = await repo.getById(trimmed);
+  return selected ? [...list, selected] : list;
+}
 
 export default function NuevoObjetivoPage() {
   const router = useRouter();
   const copy = GLOSSARY.objetivo.planificacion;
 
-  const [estudiantes, setEstudiantes] = useState(
-    () => (typeof window !== "undefined" ? getEstudiantes() : [])
-  );
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  const [isLoadingEstudiantes, setIsLoadingEstudiantes] = useState(true);
   const [preselectedEstudianteId, setPreselectedEstudianteId] = useState("");
   const [preselectedConclusionIds, setPreselectedConclusionIds] = useState<
     string[]
@@ -38,32 +52,51 @@ export default function NuevoObjetivoPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setEstudiantes(getEstudiantes());
+    let cancelled = false;
 
-    const params = new URLSearchParams(window.location.search);
-    const preselected = params.get("estudianteId");
-    if (preselected) {
-      setPreselectedEstudianteId(preselected);
-    }
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const preselected = params.get("estudianteId") ?? "";
 
-    const conclusionId = params.get("conclusionId");
-    const conclusionIdsParam = params.getAll("conclusionIds");
-    const ids = [
-      ...(conclusionId ? [conclusionId] : []),
-      ...conclusionIdsParam,
-    ].filter(Boolean);
+      const conclusionId = params.get("conclusionId");
+      const conclusionIdsParam = params.getAll("conclusionIds");
+      const ids = [
+        ...(conclusionId ? [conclusionId] : []),
+        ...conclusionIdsParam,
+      ].filter(Boolean);
 
-    if (ids.length > 0) {
-      setPreselectedConclusionIds(ids);
-      const primera = getConclusionEvaluativaById(ids[0]);
-      if (primera) {
-        setPreselectedEvaluacionId(primera.evaluacionIntegralId);
-        const dimension = mapConclusionDimensionToObjetivoDimension(
-          primera.dimensionId
-        );
-        if (dimension) setSuggestedDimension(dimension);
+      try {
+        const list = await loadEstudiantesIncludingId(preselected || undefined);
+        if (cancelled) return;
+
+        setEstudiantes(list);
+        if (preselected) {
+          setPreselectedEstudianteId(preselected);
+        }
+
+        if (ids.length > 0) {
+          setPreselectedConclusionIds(ids);
+          const primera = getConclusionEvaluativaById(ids[0]);
+          if (primera) {
+            setPreselectedEvaluacionId(primera.evaluacionIntegralId);
+            const dimension = mapConclusionDimensionToObjetivoDimension(
+              primera.dimensionId
+            );
+            if (dimension) setSuggestedDimension(dimension);
+          }
+        }
+      } catch {
+        if (!cancelled) setEstudiantes([]);
+      } finally {
+        if (!cancelled) setIsLoadingEstudiantes(false);
       }
     }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function handleSubmit(input: ObjetivoPIEPlanificacionSubmitInput) {
@@ -110,7 +143,9 @@ export default function NuevoObjetivoPage() {
             <p className="mt-1 text-sm text-slate-600">{copy.subtitulo}</p>
           </div>
 
-          {estudiantes.length === 0 ? (
+          {isLoadingEstudiantes ? (
+            <p className="text-sm text-slate-500">Cargando estudiantes…</p>
+          ) : estudiantes.length === 0 ? (
             <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-amber-900">
               <p>Primero debes registrar al menos un estudiante.</p>
               <Link

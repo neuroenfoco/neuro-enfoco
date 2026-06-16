@@ -11,11 +11,8 @@ import {
   type IngresoPieMarcoInput,
 } from "@/lib/ingreso-pie";
 import { validateFechasMarco } from "@/lib/marco-institucional-pie-storage";
-import {
-  getEstudianteById,
-  getEstudiantes,
-  type Estudiante,
-} from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
+import type { Estudiante } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -49,19 +46,35 @@ export default function IngresoPiePage() {
   const [borradores, setBorradores] = useState<HallazgoIngresoBorrador[]>([]);
 
   useEffect(() => {
-    const list = getEstudiantes();
-    setEstudiantes(list);
+    let cancelled = false;
 
-    const preselected = new URLSearchParams(window.location.search).get(
-      "estudianteId"
-    );
-    if (preselected && list.some((item) => item.id === preselected)) {
-      setEstudianteId(preselected);
+    async function loadEstudiantes() {
+      try {
+        const list = await getEstudiantesRepositoryAsync().getAll();
+        if (cancelled) return;
+
+        setEstudiantes(list);
+
+        const preselected = new URLSearchParams(window.location.search).get(
+          "estudianteId"
+        );
+        if (preselected && list.some((item) => item.id === preselected)) {
+          setEstudianteId(preselected);
+        }
+      } catch {
+        if (!cancelled) setEstudiantes([]);
+      }
     }
+
+    void loadEstudiantes();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const estudianteSeleccionado = useMemo(
-    () => getEstudianteById(estudianteId),
+    () => estudiantes.find((item) => item.id === estudianteId) ?? null,
     [estudianteId, estudiantes]
   );
 
@@ -96,7 +109,7 @@ export default function IngresoPiePage() {
     setPaso((current) => (current > 1 ? ((current - 1) as 1 | 2 | 3 | 4) : current));
   }
 
-  function handleCompletar() {
+  async function handleCompletar() {
     if (isSubmitting) return;
 
     const validationError = validarPasoActual();
@@ -108,19 +121,24 @@ export default function IngresoPiePage() {
     setIsSubmitting(true);
     setError(null);
 
-    const result = completarIngresoPIE({
-      estudianteId,
-      marco,
-      hallazgos: borradores,
-    });
+    try {
+      const result = await completarIngresoPIE({
+        estudianteId,
+        marco,
+        hallazgos: borradores,
+      });
 
-    if (!result.ok) {
-      setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        setIsSubmitting(false);
+        return;
+      }
+
+      router.push(`/estudiantes/${result.estudianteId}?tab=perfil-base`);
+    } catch {
+      setError("No se pudo completar el ingreso PIE. Intenta nuevamente.");
       setIsSubmitting(false);
-      return;
     }
-
-    router.push(`/estudiantes/${result.estudianteId}?tab=perfil-base`);
   }
 
   const estudianteResumen = estudianteSeleccionado
@@ -243,7 +261,7 @@ export default function IngresoPiePage() {
             ) : (
               <button
                 type="button"
-                onClick={handleCompletar}
+                onClick={() => void handleCompletar()}
                 disabled={isSubmitting || !puedeAvanzarPaso1}
                 className="rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-600/25 hover:from-teal-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >

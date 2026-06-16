@@ -1,6 +1,8 @@
 import { getApoyoEfectividadView } from "@/lib/apoyos/apoyo-efectividad-view";
-import { readApoyosPIE } from "@/lib/apoyos/apoyos-persistence";
-import { getApoyoPIEEstadoLabel } from "@/lib/apoyos/apoyos-view";
+import {
+  getApoyoPIEEstadoLabel,
+  getApoyoResponsableDisplay,
+} from "@/lib/apoyos/apoyos-view";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   getDashboardView,
@@ -10,8 +12,11 @@ import {
   buildObjetivoSeguimiento,
   type EstadoSeguimientoObjetivo,
 } from "@/lib/objetivos/objetivo-seguimiento";
-import { getObjetivosPIE } from "@/lib/pie-objectives-storage";
-import { getEstudiantes } from "@/lib/students-storage";
+import {
+  getApoyosRepository,
+  getEstudiantesRepository,
+  getObjetivosRepository,
+} from "@/lib/repositories/repository-factory";
 
 export type ReporteEstadoInstitucional = {
   estudiantesActivos: number;
@@ -132,7 +137,8 @@ function buildEstadoInstitucional(): ReporteEstadoInstitucional {
 function buildSeguimientoObjetivos(
   nombresPorId: Map<string, string>
 ): ReporteSeguimientoObjetivoItem[] {
-  return getObjetivosPIE()
+  return getObjetivosRepository()
+    .getAll()
     .map((objetivo) => {
       const seguimiento = buildObjetivoSeguimiento(objetivo);
       return {
@@ -164,7 +170,8 @@ function buildSeguimientoObjetivos(
 function buildApoyosImplementados(
   nombresPorId: Map<string, string>
 ): ReporteApoyoImplementadoItem[] {
-  return readApoyosPIE()
+  return getApoyosRepository()
+    .getAll()
     .map((apoyo) => {
       const efectividad = getApoyoEfectividadView(apoyo.id);
       return {
@@ -172,7 +179,7 @@ function buildApoyosImplementados(
         estudianteId: apoyo.estudianteId,
         estudiante: nombresPorId.get(apoyo.estudianteId) ?? "Estudiante",
         apoyo: apoyo.nombre,
-        responsable: apoyo.responsable ?? "—",
+        responsable: getApoyoResponsableDisplay(apoyo),
         frecuencia: apoyo.frecuencia ?? "—",
         estado: getApoyoPIEEstadoLabel(apoyo.estado),
         intervenciones: efectividad?.cantidadIntervenciones ?? 0,
@@ -230,7 +237,7 @@ function buildAlertasAgrupadas(
 }
 
 export function getReportesInstitucionalesView(): ReportesInstitucionalesView {
-  const estudiantes = getEstudiantes();
+  const estudiantes = getEstudiantesRepository().getAll();
   const dashboard = getDashboardView();
   const nombresPorId = new Map(
     estudiantes.map((item) => [item.id, item.nombre] as const)

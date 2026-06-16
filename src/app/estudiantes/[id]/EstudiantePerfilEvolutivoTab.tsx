@@ -3,6 +3,7 @@
 import { AvisoInclusivoParticipacion } from "@/components/perfil/AvisoInclusivoParticipacion";
 import { HallazgoHistorialTrigger } from "@/components/perfil/HallazgoHistorialTrigger";
 import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   formatPerfilEvolutivoConfirmaciones,
@@ -22,6 +23,7 @@ export function EstudiantePerfilEvolutivoTab({
   estudianteId,
   estudiantePrimerNombre,
 }: EstudiantePerfilEvolutivoTabProps) {
+  const guidance = GLOSSARY.institutionalGuidance.perfilEvolutivo;
   const [ficha, setFicha] = useState<PerfilEvolutivoFicha>(() =>
     typeof window === "undefined"
       ? emptyFicha(estudianteId)
@@ -54,10 +56,21 @@ export function EstudiantePerfilEvolutivoTab({
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
           {GLOSSARY.perfilEvolutivo.subtitulo}
         </p>
-        <p className="mt-4 rounded-xl border border-violet-100 bg-white/70 px-4 py-3 text-xs leading-relaxed text-slate-600">
-          {GLOSSARY.perfilEvolutivo.avisoNoEvaluacion}
-        </p>
       </section>
+
+      <InstitutionalInfoCard
+        variant="info"
+        title={guidance.info.title}
+        body={guidance.info.body}
+        detail={guidance.info.detail}
+      />
+
+      {!ficha.tieneRegistros ? (
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={guidance.recomendacionSinRegistros.body}
+        />
+      ) : null}
 
       {!ficha.tieneRegistros ? (
         <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">

@@ -75,6 +75,26 @@ export function getEstudianteById(id: string): Estudiante | null {
   return getEstudiantes().find((estudiante) => estudiante.id === id) ?? null;
 }
 
+export function marcarIngresoPieCompletado(
+  estudianteId: string,
+  completadoEn?: string
+): Estudiante | null {
+  const estudiantes = readEstudiantesRaw();
+  const index = estudiantes.findIndex((estudiante) => estudiante.id === estudianteId);
+  if (index === -1) return null;
+
+  const updated: Estudiante = {
+    ...estudiantes[index],
+    ingresoPieCompletado: true,
+    ingresoPieCompletadoEn: completadoEn ?? formatEstudianteFecha(),
+  };
+
+  const next = [...estudiantes];
+  next[index] = updated;
+  writeEstudiantes(next);
+  return updated;
+}
+
 export function saveEstudiante(input: {
   nombre: string;
   curso: string;

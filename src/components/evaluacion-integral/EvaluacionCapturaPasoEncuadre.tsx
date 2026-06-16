@@ -12,13 +12,13 @@ import {
 } from "@/lib/evaluacion-integral/evaluacion-integral-fechas";
 import type { EvaluacionIntegralTipo } from "@/lib/evaluacion-integral/evaluacion-integral-types";
 import type { ParticipacionEvaluacionEnriquecida } from "@/lib/evaluacion-integral/evaluacion-integral-view";
-import { getEvaluacionIngresoCerradaByEstudianteId } from "@/lib/evaluacion-integral/evaluacion-integral-storage";
+import { tieneIngresoPIECompletadoAsync } from "@/lib/ingreso-pie";
 import {
   deleteParticipacionEvaluacionIntegral,
   saveParticipacionEvaluacionIntegral,
   updateParticipacionEvaluacionIntegral,
 } from "@/lib/evaluacion-integral/participacion-evaluacion-integral-storage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const COPY = GLOSSARY.evaluacionCaptura;
 
@@ -47,9 +47,7 @@ export function EvaluacionCapturaPasoEncuadre({
   onEncuadreChange,
   onParticipantesChange,
 }: EvaluacionCapturaPasoEncuadreProps) {
-  const ingresoCerrada = Boolean(
-    getEvaluacionIngresoCerradaByEstudianteId(estudianteId)
-  );
+  const [ingresoCompletado, setIngresoCompletado] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [editingParticipacion, setEditingParticipacion] =
     useState<ParticipacionEvaluacionEnriquecida | null>(null);
@@ -57,6 +55,18 @@ export function EvaluacionCapturaPasoEncuadre({
     null
   );
   const [isSavingParticipacion, setIsSavingParticipacion] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void tieneIngresoPIECompletadoAsync(estudianteId).then((completado) => {
+      if (!cancelled) setIngresoCompletado(completado);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [estudianteId]);
 
   function handleEncuadreFieldChange(
     field: "tipo" | "fechaInicio" | "fechaTermino",
@@ -145,10 +155,10 @@ export function EvaluacionCapturaPasoEncuadre({
                 <option
                   key={option.id}
                   value={option.id}
-                  disabled={option.id === "ingreso" && ingresoCerrada}
+                  disabled={option.id === "ingreso" && ingresoCompletado}
                 >
                   {option.label}
-                  {option.id === "ingreso" && ingresoCerrada
+                  {option.id === "ingreso" && ingresoCompletado
                     ? ` (${COPY.ingresoYaRegistrado})`
                     : ""}
                 </option>

@@ -54,21 +54,206 @@ export const GLOSSARY = {
     institucionNeutra: "Plataforma institucional PIE",
   },
 
+  institutionalGuidance: {
+    cardTitles: {
+      info: "¿Qué es este módulo?",
+      orientacion: "Orientación",
+      recomendacion: "Siguiente paso sugerido",
+    },
+    perfilBase: {
+      eyebrow: "Conocimiento institucional consolidado",
+      info: {
+        title: "Perfil Base",
+        body:
+          "Referencia institucional compartida sobre fortalezas, intereses, contextos de éxito y condiciones que influyen en la participación del estudiante.",
+        detail:
+          "Se alimenta del ingreso PIE, la edición directa del equipo y el cierre de evaluaciones integrales. Las intervenciones pueden confirmar hallazgos, pero no reemplazan esta referencia común.",
+      },
+      recomendacionSinConsolidado: {
+        body:
+          "Aún no hay conocimiento consolidado en el Perfil Base. Puedes completar el ingreso PIE o registrar hallazgos directamente en esta pestaña.",
+        ctaIngreso: "Ir a ingreso PIE",
+      },
+    },
+    perfilEvolutivo: {
+      info: {
+        title: "Perfil Evolutivo",
+        body:
+          "Memoria longitudinal de todo el conocimiento registrado: lo consolidado en Perfil Base y lo emergente desde intervenciones.",
+        detail:
+          "Este perfil no evalúa al estudiante, no lo califica y no reemplaza una evaluación formal. Permite ver cómo evoluciona el conocimiento del equipo y con qué frecuencia se confirman hallazgos.",
+      },
+      recomendacionSinRegistros: {
+        body:
+          "Completa el Perfil Base o registra intervenciones para construir esta memoria longitudinal del estudiante.",
+      },
+    },
+    evaluacionIntegral: {
+      info: {
+        title: "Evaluación Integral",
+        body:
+          "Proceso evaluativo interdisciplinario formal con equipo, hallazgos, conclusiones y fechas institucionales.",
+        detail:
+          "Formaliza y revisa el conocimiento institucional, actualiza el Perfil Base y sustenta objetivos y PACI. Puede coexistir con ingreso PIE previo; no es el único camino de entrada al sistema.",
+      },
+      recomendacionSinEvaluacion: {
+        body:
+          "No hay evaluación integral registrada. El Perfil Base puede existir igualmente; la evaluación formaliza hallazgos y sustenta conclusiones para objetivos y PACI.",
+        cta: "Nueva evaluación",
+      },
+      recomendacionBorrador: {
+        body:
+          "Hay una evaluación en borrador. Al cerrarla, los hallazgos se consolidarán en el Perfil Base.",
+        cta: "Continuar evaluación",
+      },
+    },
+    objetivos: {
+      info: {
+        title: "Objetivos PIE",
+        body:
+          "Puente entre el conocimiento institucional y la práctica educativa: metas pedagógicas con línea base, condiciones de participación y apoyos planificados.",
+        detail:
+          "Pueden vincularse a conclusiones evaluativas o planificarse directamente. Los apoyos institucionales (ApoyoPIE) y el uso del apoyo en intervenciones se documentan en el seguimiento y las evidencias.",
+      },
+      recomendacionSinObjetivos: {
+        body:
+          "Aún no hay objetivos PIE. Puedes planificarlos desde conclusiones evaluativas o de forma directa con el equipo.",
+        cta: "Nuevo objetivo",
+      },
+    },
+    apoyos: {
+      info: {
+        title: "Apoyos institucionales",
+        body:
+          "Registro de los apoyos (ApoyoPIE) que el establecimiento planifica e implementa para favorecer la participación y el logro de objetivos PIE.",
+        detail:
+          "ApoyoPIE responde «¿Qué apoyo estamos implementando?». El uso concreto en cada intervención se documenta por separado («¿Qué apoyo utilizamos hoy?») mediante el catálogo de participación en evidencias.",
+      },
+      recomendacionSinRegistros: {
+        body:
+          "Aún no hay apoyos institucionales registrados. Puedes declararlos desde un objetivo PIE o desde la ficha del estudiante.",
+        cta: "Ir a objetivos",
+      },
+    },
+    intervenciones: {
+      info: {
+        title: "Intervenciones",
+        body:
+          "Registro de las acciones, el uso del apoyo y los acompañamientos documentados por el equipo en contextos concretos.",
+        detail:
+          "En cada intervención el equipo registra qué apoyos del catálogo utilizó o tuvo disponibles (uso del apoyo). Las intervenciones documentan evidencias y observaciones que contribuyen al seguimiento del estudiante y al fortalecimiento del conocimiento institucional.",
+      },
+      recomendacionSinRegistros: {
+        body:
+          "No hay intervenciones registradas. Documenta el acompañamiento pedagógico cuando el equipo implemente apoyos o experiencias con el estudiante.",
+        cta: "Registrar intervención",
+      },
+    },
+    comoFunciona: {
+      vision:
+        "Neuro Enfoco organiza conocimiento institucional, planificación pedagógica y seguimiento documentado sin reemplazar el juicio profesional del equipo.",
+      ejePrincipal: [
+        "Estudiante",
+        "Perfil Base",
+        "Objetivos",
+        "Apoyos institucionales",
+        "Intervenciones",
+        "Evidencias",
+        "Perfil Evolutivo",
+      ],
+      evaluacionComplementaria:
+        "La Evaluación Integral es un proceso complementario que formaliza conocimiento, actualiza el Perfil Base y sustenta objetivos y PACI.",
+    },
+  },
+
   nav: {
     dashboard: "Dashboard",
     estudiantes: "Estudiantes",
+    profesionales: "Profesionales",
     intervenciones: "Intervenciones",
     objetivos: "Objetivos",
     reportes: "Reportes",
+    configuracion: "Configuración",
+  },
+
+  auth: {
+    sesionActiva: "Sesión activa",
+    sinAutenticacion: "Sin autenticación",
+    usuarioDemo: "Usuario de demostración",
+    avisoPreparacion:
+      "La autenticación institucional estará disponible en una versión futura. Por ahora se utiliza un usuario de demostración con permisos completos.",
+  },
+
+  session: {
+    titulo: "Sesión institucional",
+    subtitulo:
+      "Identidad y permisos del usuario conectado al establecimiento en esta sesión.",
+    rolAsignado: "Rol asignado",
+    estadoCuenta: "Estado de la cuenta",
+    permisosActivos: "Permisos activos",
+  },
+
+  usuarios: {
+    titulo: "Usuarios institucionales",
+    subtitulo:
+      "Personas con acceso a la plataforma según su rol en el establecimiento. La gestión de cuentas estará disponible en una versión futura.",
+    avisoSoloLectura:
+      "Vista informativa. No es posible crear, editar ni desactivar usuarios en esta versión.",
+    columnaNombre: "Nombre",
+    columnaRol: "Rol",
+    columnaCorreo: "Correo",
+    columnaEstado: "Estado",
+    estadoActivo: "Activo",
+    estadoInactivo: "Inactivo",
+    sinRegistros: "No hay usuarios institucionales registrados.",
+  },
+
+  roles: {
+    administrador: "Administrador",
+    coordinadorPie: "Coordinador/a PIE",
+    educadorDiferencial: "Educador/a diferencial",
+    psicologo: "Psicólogo/a",
+    fonoaudiologo: "Fonoaudiólogo/a",
+    terapeutaOcupacional: "Terapeuta ocupacional",
+    docente: "Docente",
+  },
+
+  permisos: {
+    titulo: "Permisos institucionales",
+    subtitulo:
+      "Capacidades asignadas por rol para acceder y modificar registros del establecimiento.",
+    estudiantesRead: "Consultar estudiantes",
+    estudiantesWrite: "Gestionar estudiantes",
+    evaluacionesRead: "Consultar evaluaciones",
+    evaluacionesWrite: "Gestionar evaluaciones",
+    objetivosRead: "Consultar objetivos PIE",
+    objetivosWrite: "Gestionar objetivos PIE",
+    intervencionesRead: "Consultar intervenciones",
+    intervencionesWrite: "Registrar intervenciones",
+    paciRead: "Consultar PACI",
+    paciWrite: "Gestionar PACI",
+    reportesRead: "Consultar reportes",
+    configuracionWrite: "Administrar configuración",
+  },
+
+  configuracion: {
+    titulo: "Configuración institucional",
+    subtitulo:
+      "Parámetros y administración de la plataforma para el establecimiento.",
+    usuariosTitulo: "Usuarios de la plataforma",
+    usuariosSubtitulo:
+      "Accesos institucionales según rol y estado de cada persona del equipo.",
+    avisoFuturo:
+      "Esta sección prepara la arquitectura multiusuario. La autenticación real y la gestión de cuentas se integrarán en el backend institucional.",
   },
 
   profesional: {
     tituloListado: "Profesionales del establecimiento",
     subtituloListado:
-      "Personas que registran intervenciones y acompañan a estudiantes en distintos ámbitos institucionales.",
+      "Personas del equipo escolar que participan en intervenciones, evaluaciones, equipo de apoyo y otros procesos institucionales.",
     tituloNuevo: "Nuevo profesional",
     subtituloNuevo:
-      "Registra a una persona del equipo escolar para asociarla a intervenciones y futuros procesos.",
+      "Registra a una persona del equipo para vincularla a intervenciones, evaluaciones y acompañamiento de estudiantes.",
     tituloEditar: "Editar profesional",
     subtituloEditar: "Actualiza los datos institucionales de la persona.",
     nuevo: "Nuevo profesional",
@@ -92,7 +277,21 @@ export const GLOSSARY = {
     estadoActivo: "Activo",
     estadoInactivo: "Inactivo",
     profesionalTransicion:
-      "Registro de transición para intervenciones históricas.",
+      "Registro de transición para datos históricos del establecimiento.",
+    indicadorTotal: "Total profesionales",
+    indicadorActivos: "Profesionales activos",
+    indicadorRoles: "Roles representados",
+    eliminar: "Eliminar",
+    eliminarTitulo: "Eliminar profesional",
+    eliminarMensaje:
+      "¿Estás seguro de eliminar a este profesional? Esta acción no se puede deshacer.",
+    eliminarBotonCancelar: "Cancelar",
+    eliminarBotonConfirmar: "Eliminar",
+    eliminarExito: "Profesional eliminado correctamente.",
+    eliminarEnUso:
+      "No es posible eliminar este profesional porque está siendo utilizado en registros existentes.",
+    eliminarNoPermitidoTransicion:
+      "No es posible eliminar el registro de transición del establecimiento.",
     selectorVacio: "No hay profesionales activos. Registra uno primero.",
     selectorLabel: "Profesional responsable",
   },
@@ -154,7 +353,7 @@ export const GLOSSARY = {
     tab: "Evaluación Integral",
     titulo: "Evaluación Integral",
     subtitulo:
-      "Proceso evaluativo interdisciplinario que origina el conocimiento institucional del estudiante.",
+      "Proceso evaluativo interdisciplinario que formaliza y revisa el conocimiento institucional del estudiante.",
     resumenTitulo: "Evaluación Integral",
     verEvaluacion: "Ver evaluación →",
     sinEvaluacion:
@@ -309,7 +508,7 @@ export const GLOSSARY = {
     borradorExistente:
       "Este estudiante ya tiene una evaluación en borrador. Continúa ese proceso en lugar de crear otra.",
     ingresoYaRegistrado:
-      "Ya existe una evaluación de ingreso cerrada para este estudiante.",
+      "El Ingreso PIE ya fue completado para este estudiante.",
     crearEvaluacion: "Crear evaluación",
     creando: "Creando…",
     anterior: "Anterior",
@@ -369,7 +568,7 @@ export const GLOSSARY = {
     nueva: "Nueva intervención",
     historial: "Historial de intervenciones",
     historialSubtitulo:
-      "Registro de intervenciones · fortalezas y evidencias",
+      "Registro de acompañamientos, evidencias y observaciones del trabajo pedagógico con estudiantes.",
     guardar: "Guardar intervención",
     guardarYVerEstudiante: "Guardar y ver estudiante",
     guardadaOk: "Intervención registrada correctamente",
@@ -382,7 +581,7 @@ export const GLOSSARY = {
     vacioFichaEstudiante:
       "Aún no existen intervenciones registradas para este estudiante.",
     fichaHistorialSubtitulo:
-      "Historial institucional y pedagógico derivado de intervenciones y evidencias vinculadas.",
+      "Acciones, apoyos y acompañamientos documentados con sus evidencias y observaciones asociadas.",
     perfilExperimentalTitulo: "Perfil del Estudiante y de Participación",
     perfilExperimentalSubtitulo:
       "Síntesis del perfil base y las confirmaciones registradas en intervenciones.",
@@ -404,7 +603,7 @@ export const GLOSSARY = {
     eliminarEstudianteAdvertencia:
       "También se eliminarán todas las intervenciones, evidencias y observaciones asociadas.",
     desdeIntervenciones:
-      "Vista integrada de condiciones de participación, línea base, metas, evidencias, apoyos e indicadores analíticos derivados de las intervenciones registradas.",
+      "Objetivos activos, evidencias asociadas y seguimiento derivado de intervenciones registradas.",
     objetivosNoEliminan:
       "Las intervenciones registradas no se eliminarán. Solo se quitará el objetivo PIE.",
     apoyosNoModifican:
@@ -418,7 +617,7 @@ export const GLOSSARY = {
       "Aún no hay intervenciones asociadas a este objetivo.",
     registrarCta: "Registrar intervención",
     descripcionRegistrar:
-      "Documenta apoyos, observaciones y resultados en un solo flujo. Aplica a PIE, inclusión escolar, convivencia, espacios de calma, multisensorialidad y apoyos en aula.",
+      "Documenta las acciones implementadas, el uso del apoyo y las observaciones del acompañamiento pedagógico, con evidencia asociada.",
     tituloRegistrar: "Registrar intervención",
     logroDefault:
       "Se observó uso de un apoyo de regulación emocional sin apoyo directo.",
@@ -447,7 +646,7 @@ export const GLOSSARY = {
     tab: "Perfil Evolutivo",
     tituloDe: (nombre: string) => `Perfil Evolutivo de ${nombre}`,
     subtitulo:
-      "Memoria institucional del conocimiento construido sobre el estudiante y las condiciones de su participación.",
+      "Memoria longitudinal del conocimiento construido sobre el estudiante y las condiciones de su participación, integrando Perfil Base e intervenciones.",
     subtituloEstudiante:
       "Recursos personales que el equipo ha identificado y confirmado a través del tiempo.",
     subtituloParticipacion:
@@ -534,7 +733,7 @@ export const GLOSSARY = {
     tab: "Perfil Base",
     tituloDe: (nombre: string) => `Perfil Base de ${nombre}`,
     subtitulo:
-      "Conocimiento profesional inicial del estudiante antes y al margen de las intervenciones: familia, equipo escolar e informes previos.",
+      "Referencia institucional compartida sobre fortalezas, intereses, contextos de éxito y condiciones que influyen en la participación del estudiante.",
     origenIngresoPie: "Ingreso PIE",
     origenPerfilBase: "Perfil Base",
     origenIntervencion: "Intervención",
@@ -546,37 +745,55 @@ export const GLOSSARY = {
     verIntervencion: "Ir a intervenciones del estudiante",
   },
 
+  apoyoPie: {
+    entidad: "ApoyoPIE",
+    capaInstitucional: "Apoyo institucional",
+    capaUso: "Uso del apoyo",
+    capaPlanificacion: "Apoyo planificado",
+    preguntaInstitucional: "¿Qué apoyo estamos implementando?",
+    preguntaUso: "¿Qué apoyo utilizamos hoy?",
+    preguntaPlanificacion: "¿Qué apoyos anticipamos para este objetivo?",
+    definicionInstitucional:
+      "Entidad canónica ApoyoPIE: el apoyo que el establecimiento declara, asigna y da seguimiento (responsable, frecuencia, estado, vínculo con objetivos e intervenciones).",
+    definicionUso:
+      "Evidencia en intervenciones vía Sesion.apoyosUtilizados y el catálogo ApoyoSesionId. Documenta el uso concreto sin reemplazar el registro institucional ApoyoPIE.",
+    definicionPlanificacion:
+      "Intención pedagógica en ObjetivoPIE.apoyosPlanificadosIds. Orienta la planificación; no equivale al apoyo institucional ni al uso documentado.",
+    notaLegacyApoyoImplementado:
+      "El registro opcional «período declarado por el equipo» (ApoyoImplementado) es un concepto administrativo distinto de ApoyoPIE.",
+  },
+
   apoyos: {
-    utilizados: "Apoyos de participación",
+    utilizados: "Uso del apoyo",
     utilizadosSubtitulo:
-      "Apoyos utilizados o presentes durante esta intervención.",
+      "¿Qué apoyo utilizamos hoy? Catálogo institucional presente o usado en esta intervención.",
     utilizadosAyuda:
-      "Registra los apoyos que el equipo implementó o estuvieron disponibles durante esta experiencia. No implica efectividad ni reemplaza la observación profesional.",
+      "Registra el uso del apoyo según el catálogo de participación. No declara el apoyo institucional (ApoyoPIE) ni implica efectividad; complementa la observación profesional.",
     queFacilitaron: "Apoyos que facilitaron la participación",
-    deParticipacion: "Apoyos de participación",
+    deParticipacion: "Uso del apoyo en intervenciones",
     sugeridos:
       "Apoyos sugeridos según la dimensión PIE proyectada; orientación pedagógica que el equipo adapta al contexto.",
-    suelenFacilitar: "Apoyos de participación registrados con frecuencia",
+    suelenFacilitar: "Uso del apoyo registrado con frecuencia",
     yAjustes: "Apoyos y ajustes que facilitan la participación",
     sinRegistrados:
       "Aún no hay apoyos registrados en intervenciones.",
     implementados: "Apoyos implementados",
     participacionFicha: {
       etiquetaExperimental: "Vista experimental",
-      titulo: "Apoyos que favorecen la participación",
+      titulo: "Uso del apoyo y participación",
       subtitulo: (nombre: string) =>
-        `Resumen de apoyos registrados por el equipo educativo y los contextos en que se han documentado experiencias de participación de ${nombre}.`,
+        `Resumen del uso del apoyo documentado en intervenciones de ${nombre} y los contextos en que el equipo registró experiencias de participación.`,
       ayuda:
-        "Esta vista organiza información registrada por el equipo educativo. No establece relaciones causales ni reemplaza el juicio profesional.",
+        "Esta vista cruza uso del apoyo (evidencias en intervenciones) con planificación en objetivos. No establece relaciones causales ni reemplaza el juicio profesional ni el registro institucional ApoyoPIE.",
       resumenConteos: (ficha: {
         intervencionesConApoyosDocumentados: number;
         totalIntervenciones: number;
         apoyosDocumentados: { length: number };
       }) =>
         `${ficha.intervencionesConApoyosDocumentados} intervenciones con apoyos documentados de ${ficha.totalIntervenciones} registradas · ${ficha.apoyosDocumentados.length} apoyos distintos en el resumen.`,
-      seccionApoyos: "Apoyos documentados",
+      seccionApoyos: "Uso del apoyo documentado",
       seccionApoyosDescripcion:
-        "Apoyos registrados en intervenciones y la participación observada en cada una.",
+        "Apoyos del catálogo registrados al documentar intervenciones y la participación observada en cada una.",
       intervencionesDocumentadas: (cantidad: number) =>
         `Documentado en ${cantidad} intervención${cantidad === 1 ? "" : "es"}`,
       veces: (cantidad: number) =>
@@ -598,11 +815,11 @@ export const GLOSSARY = {
         "Aún no hay necesidades de apoyo documentadas en intervenciones con apoyos registrados.",
       seccionPlanificados: "Apoyos planificados sin uso documentado",
       seccionPlanificadosDescripcion:
-        "Apoyos previstos en objetivos que aún no aparecen en el registro de apoyos utilizados en intervenciones.",
+        "Apoyos previstos en objetivos que aún no aparecen en el uso del apoyo registrado en intervenciones.",
       planificadoEn: (objetivoNombre: string) =>
         `Planificado en: «${objetivoNombre}»`,
       sinApoyos:
-        "No hay apoyos documentados en las intervenciones registradas.",
+        "No hay uso del apoyo documentado en las intervenciones registradas.",
       vacioTitulo: "Aún no existe información suficiente.",
       vacioTexto:
         "Esta vista se construye a partir de intervenciones registradas por el equipo educativo. A medida que se registren apoyos y experiencias de participación, aparecerá información aquí.",
@@ -662,27 +879,59 @@ export const GLOSSARY = {
     },
   },
 
+  apoyosConsolidados: {
+    titulo: "Planificación y uso del apoyo",
+    subtitulo:
+      "Cruza apoyos planificados en el objetivo con el uso del apoyo documentado en intervenciones vinculadas.",
+    ayuda:
+      "No implica efectividad del apoyo. Refleja planificación pedagógica y registros de uso en intervenciones.",
+    sinDatos:
+      "Aún no hay apoyos planificados ni uso del apoyo documentado para este objetivo.",
+    chipPlanificados: "Planificados",
+    chipDocumentados: "Uso documentado",
+    chipIntervencionesConApoyos: "Intervenciones con uso del apoyo",
+    chipPrimeraDocumentacion: "Primera documentación",
+    chipUltimaDocumentacion: "Última documentación",
+    grupoPlanificadosYDocumentados: "Planificados con uso documentado",
+    grupoPlanificadosSinDocumentacion: "Planificados, sin uso documentado aún",
+    grupoDocumentadosSinPlanificacion: "Uso documentado sin planificación previa",
+    vacioPlanificadosYDocumentados:
+      "No hay apoyos planificados con uso documentado en intervenciones.",
+    vacioPlanificadosSinDocumentacion:
+      "No hay apoyos planificados pendientes de documentar en intervenciones.",
+    vacioDocumentadosSinPlanificacion:
+      "No hay uso del apoyo documentado fuera de la planificación del objetivo.",
+    planificadoSinRegistro:
+      "Planificado en este objetivo; aún sin uso del apoyo registrado en intervenciones vinculadas.",
+    estadoPlanificadoYDocumentado: "Planificado y con uso documentado",
+    estadoPlanificadoSinDocumentacion: "Planificado, sin uso documentado aún",
+    estadoDocumentadoSinPlanificacion: "Uso documentado en intervenciones",
+  },
+
   apoyosImplementados: {
     titulo: "Apoyos implementados",
     subtituloObjetivo:
-      "Apoyos que el establecimiento planifica e implementa para este objetivo PIE.",
+      "¿Qué apoyo estamos implementando? Registro institucional ApoyoPIE vinculado a este objetivo PIE.",
     subtituloEstudiante:
-      "Planificación institucional de apoyos vinculados al estudiante y sus objetivos.",
-    nuevoApoyo: "Registrar apoyo",
+      "¿Qué apoyo estamos implementando? Apoyos institucionales (ApoyoPIE) del estudiante y sus objetivos.",
+    ayudaInstitucional:
+      "ApoyoPIE es el apoyo institucional: responsable, frecuencia, estado y trazabilidad operacional. El uso en cada intervención se registra por separado.",
+    nuevoApoyo: "Registrar apoyo institucional",
     guardar: "Guardar apoyo",
     guardarCambios: "Guardar cambios",
     editarApoyo: "Editar apoyo",
     editar: "Editar",
     eliminar: "Eliminar",
     cancelar: "Cancelar",
-    confirmarEliminar: "¿Eliminar este apoyo implementado?",
-    sinApoyos: "Aún no hay apoyos implementados registrados.",
-    crearDesdeSugerido: "Crear apoyo implementado",
+    confirmarEliminar: "¿Eliminar este apoyo institucional (ApoyoPIE)?",
+    sinApoyos: "Aún no hay apoyos institucionales (ApoyoPIE) registrados.",
+    crearDesdeSugerido: "Registrar como apoyo institucional",
     verObjetivo: "Ver objetivo →",
     campoNombre: "Nombre del apoyo",
     campoTipo: "Tipo de apoyo",
     campoDescripcion: "Descripción",
     responsable: "Responsable",
+    sinAsignar: "Sin asignar",
     frecuencia: "Frecuencia",
     frecuenciaPlaceholder: "Ej.: Diario en aula",
     estadoApoyo: "Estado del apoyo",
@@ -701,17 +950,17 @@ export const GLOSSARY = {
     ultimaIntervencion: "Última intervención",
     ultimaActividad: "Última actividad",
     vincularIntervencion: "Vincular intervención",
-    vincularApoyo: "Vincular apoyo implementado",
+    vincularApoyo: "Vincular apoyo institucional",
     seleccionarIntervencion: "Seleccionar intervención",
-    seleccionarApoyo: "Seleccionar apoyo implementado",
+    seleccionarApoyo: "Seleccionar apoyo institucional",
     vincular: "Vincular",
     desvincular: "Desvincular",
     sinIntervencionesVinculadas: "Sin intervenciones vinculadas a este apoyo.",
-    sinApoyosRelacionados: "Sin apoyos implementados relacionados.",
+    sinApoyosRelacionados: "Sin apoyos institucionales relacionados.",
     confirmarDesvincularIntervencion:
-      "¿Desvincular esta intervención del apoyo implementado?",
+      "¿Desvincular esta intervención del apoyo institucional?",
     confirmarDesvincularApoyo:
-      "¿Desvincular este apoyo implementado de la intervención?",
+      "¿Desvincular este apoyo institucional de la intervención?",
     efectividadOperacional: {
       titulo: "Efectividad operacional",
       subtitulo:
@@ -729,6 +978,34 @@ export const GLOSSARY = {
         "Intervenciones y evidencias en desarrollo; la trazabilidad operacional avanza.",
       observacionConEvidencia:
         "Intervenciones y evidencias consolidadas en el registro institucional.",
+    },
+    estadoOperacionalApoyo: {
+      titulo: "Estado operacional",
+      aclaracion:
+        "Uso documentado en intervenciones vinculadas. No afirma que el apoyo figure en el registro de uso del catálogo de la sesión.",
+      sinTrazabilidad: "Sin trazabilidad operacional",
+      usoDocumentado: "Uso documentado",
+      usoFrecuente: "Uso frecuente",
+      vinculadoSinEvidencias: "Sin uso documentado",
+      observacionSinTrazabilidad:
+        "No hay intervenciones vinculadas a este apoyo institucional.",
+      observacionUsoDocumentado:
+        "Uso documentado en intervenciones vinculadas (sesiones registradas en la cadena).",
+      observacionUsoFrecuente:
+        "Actividad recurrente en intervenciones vinculadas y sesiones asociadas.",
+      observacionVinculadoSinEvidencias:
+        "Hay intervenciones vinculadas, pero aún no hay sesiones documentadas en esa cadena.",
+    },
+    resumenOperacionalObjetivo: {
+      titulo: "Apoyos institucionales",
+      usoFrecuente: "Uso frecuente",
+      usoDocumentado: "Uso documentado",
+      sinUsoDocumentado: "Sin uso documentado",
+      sinTrazabilidad: "Sin trazabilidad",
+      alertaSinTrazabilidad:
+        "Hay apoyos institucionales sin intervenciones vinculadas.",
+      alertaSinUsoDocumentado:
+        "Hay apoyos vinculados que aún no registran actividad documentada.",
     },
   },
 
@@ -772,7 +1049,7 @@ export const GLOSSARY = {
     sinRegistrados:
       "Aún no hay objetivos PIE registrados para este estudiante.",
     vinculadosDimensiones:
-      "Objetivos vinculados a dimensiones observadas en intervenciones",
+      "Planificación pedagógica individualizada vinculada al perfil y, cuando corresponde, a conclusiones de evaluación integral.",
     planificacion: {
       tituloNuevo: "Planificar objetivo PIE",
       tituloEditar: "Editar planificación del objetivo",
@@ -817,7 +1094,10 @@ export const GLOSSARY = {
       apoyosSugeridosAgregar: "Agregar",
       bloqueApoyos: "Apoyos planificados",
       bloqueApoyosSub:
-        "Mismo catálogo institucional que en intervenciones. Los espacios se planifican por separado.",
+        "¿Qué apoyos anticipamos para este objetivo? Mismo catálogo que el uso del apoyo en intervenciones. Los espacios se planifican por separado.",
+      bloqueApoyosCatalogoTitulo: "Catálogo de apoyos planificados",
+      bloqueApoyosCatalogoSub:
+        "Selecciona apoyos del catálogo institucional (ApoyoSesionId). La implementación institucional (ApoyoPIE) y el uso en intervenciones se registran después.",
       apoyosVaciosAviso:
         "No has seleccionado apoyos planificados. Puedes guardar el objetivo y completarlos después.",
       apoyoOtroPlaceholder: "Describe el apoyo u otro recurso planificado",
@@ -839,6 +1119,38 @@ export const GLOSSARY = {
       estadoAtencion: "Atención",
       estadoRiesgo: "Riesgo",
       estadoSinSeguimiento: "Sin seguimiento",
+    },
+    detalle: {
+      eyebrow: "Objetivo",
+      metaEsperada: "Meta esperada",
+      estudiante: "Estudiante",
+      dimension: "Dimensión relacionada",
+      apoyosActivos: "Apoyos institucionales activos",
+      fundamentoTitulo: "¿Por qué existe este objetivo?",
+      condicionesTitulo: "Condiciones que dificultan la participación",
+      condicionesPlanificacion: "Desde la planificación del objetivo",
+      condicionesEvaluacion: "Desde la evaluación integral",
+      facilitadoresTitulo: "Condiciones que favorecen la participación",
+      facilitadoresSubtitulo:
+        "Referencia desde el Perfil Base del estudiante para orientar la planificación y los apoyos asociados a este objetivo.",
+      facilitadoresFortalezas: "Fortalezas observadas",
+      facilitadoresIntereses: "Intereses relevantes",
+      facilitadoresContextos: "Contextos de éxito conocidos",
+      facilitadoresVacio:
+        "Aún no existen fortalezas, intereses o contextos de éxito consolidados en el Perfil Base del estudiante.",
+      verPerfilBase: "Ver Perfil Base completo →",
+      situacionInicial: "Situación inicial",
+      lineaBase: "Línea base",
+      fechaLineaBase: "Fecha de línea base",
+      evidenciasTitulo: "Evidencias y avance",
+      cadenaAriaLabel: "Secuencia conceptual del trabajo pedagógico",
+      cadenaConceptual: [
+        "Perfil Base",
+        "Objetivo",
+        "Apoyos implementados",
+        "Intervenciones",
+        "Evidencias",
+      ],
     },
   },
 
@@ -862,14 +1174,14 @@ export const GLOSSARY = {
     interesesPredominantes: "Intereses predominantes",
     contextosFavorables: "Contextos favorables",
     condicionesFrecuentes: "Condiciones observadas con mayor frecuencia",
-    apoyosMasUtilizados: "Apoyos más utilizados",
+    apoyosMasUtilizados: "Uso del apoyo más frecuente",
     espaciosMasUtilizados: "Espacios más utilizados",
     objetivosMasTrabajados: "Objetivos más trabajados",
     trabajoPedagogico: "Trabajo pedagógico realizado",
     trabajoPedagogicoSubtitulo:
       "Participación documentada en intervenciones y objetivos vinculados.",
     tiempoAcumulado: "Tiempo acumulado",
-    apoyosDistintos: "Apoyos distintos",
+    apoyosDistintos: "Apoyos distintos en uso documentado",
     espaciosDistintos: "Espacios distintos",
     confirmacionIntervenciones: "Confirmación en intervenciones",
     usoEnIntervenciones: (cantidad: number) =>
@@ -1005,6 +1317,58 @@ export const GLOSSARY = {
       "Orientaciones según el estado del proceso pedagógico del estudiante.",
     accionesSugeridasVacio:
       "El seguimiento está al día según los registros actuales.",
+    progresoInstitucional: {
+      titulo: "Progreso institucional",
+      subtitulo:
+        "Estado del ciclo pedagógico según registros actuales del estudiante.",
+      siguientePasoTitulo: "Siguiente paso sugerido",
+      sinAccionPrioritaria: "No hay acciones prioritarias sugeridas.",
+      nodoPerfilBase: "Perfil Base",
+      nodoObjetivos: "Objetivos",
+      nodoApoyos: "Apoyos",
+      nodoIntervenciones: "Intervenciones",
+      nodoEvidencias: "Evidencias",
+      nodoPerfilEvolutivo: "Perfil Evolutivo",
+      resumenPerfilBaseVerde: (n: number) =>
+        `${n} hallazgo${n === 1 ? "" : "s"} consolidado${n === 1 ? "" : "s"}`,
+      resumenPerfilBaseAmarillo: (n: number) =>
+        `${n} hallazgo${n === 1 ? "" : "s"} consolidado${n === 1 ? "" : "s"} — ampliar perfil`,
+      resumenPerfilBaseIngresoSinHallazgos:
+        "Ingreso PIE completo — sin hallazgos consolidados aún",
+      resumenPerfilBaseRojo: "Sin ingreso PIE ni hallazgos consolidados",
+      resumenObjetivosVerde: (n: number) =>
+        `${n} objetivo${n === 1 ? "" : "s"} sin alertas de seguimiento`,
+      resumenObjetivosAmarillo: (n: number, riesgo: boolean, atencion: boolean) => {
+        const partes: string[] = [];
+        if (riesgo) partes.push("riesgo");
+        if (atencion) partes.push("atención");
+        const alerta = partes.join(" y ");
+        return `${n} objetivo${n === 1 ? "" : "s"} — seguimiento en ${alerta}`;
+      },
+      resumenObjetivosRojo: "Sin objetivos PIE registrados",
+      resumenApoyosSinRegistros: "Sin apoyos institucionales registrados",
+      resumenApoyosVerde: (n: number) =>
+        `${n} apoyo${n === 1 ? "" : "s"} con trazabilidad operacional`,
+      resumenApoyosSinTrazabilidad: (n: number) =>
+        `${n} apoyo${n === 1 ? "" : "s"} sin trazabilidad operacional`,
+      resumenApoyosSinUsoDocumentado: (n: number) =>
+        `${n} apoyo${n === 1 ? "" : "s"} sin uso documentado`,
+      resumenIntervencionesVerde: (n: number) =>
+        `Actividad en los últimos 30 días (${n} intervención${n === 1 ? "" : "es"})`,
+      resumenIntervencionesAmarillo: (n: number) =>
+        `${n} intervención${n === 1 ? "" : "es"} sin actividad reciente`,
+      resumenIntervencionesRojo: "Sin intervenciones registradas",
+      resumenEvidenciasVerde: (n: number) =>
+        `Evidencias recientes (${n} sesión${n === 1 ? "" : "es"})`,
+      resumenEvidenciasAmarillo: (n: number) =>
+        `${n} sesión${n === 1 ? "" : "es"} sin registros recientes`,
+      resumenEvidenciasRojo: "Sin registros de evidencia",
+      resumenPerfilEvolutivoVerde: (n: number) =>
+        `${n} registro${n === 1 ? "" : "s"} en memoria evolutiva`,
+      resumenPerfilEvolutivoAmarillo: (n: number) =>
+        `${n} registro${n === 1 ? "" : "s"} — memoria evolutiva escasa`,
+      resumenPerfilEvolutivoRojo: "Sin registros evolutivos",
+    },
     accionEvaluacionTitulo: "Iniciar evaluación integral",
     accionEvaluacionDescripcion:
       "Aún no hay evaluación integral registrada. Inicia el proceso evaluativo interdisciplinario.",
@@ -1080,11 +1444,11 @@ export const GLOSSARY = {
   reportes: {
     titulo: "Reportes institucionales",
     subtitulo:
-      "Vistas consolidadas de estado, seguimiento de objetivos, apoyos implementados y alertas a partir de los registros del equipo PIE.",
+      "Vistas consolidadas de estado, seguimiento de objetivos, apoyos institucionales (ApoyoPIE) y alertas a partir de los registros del equipo PIE.",
     estadoInstitucional: {
       titulo: "Estado institucional",
       subtitulo:
-        "Indicadores agregados de estudiantes, evaluaciones, objetivos PIE, PACI y apoyos implementados.",
+        "Indicadores agregados de estudiantes, evaluaciones, objetivos PIE, PACI y apoyos institucionales (ApoyoPIE).",
     },
     seguimientoObjetivos: {
       titulo: "Seguimiento de objetivos",
@@ -1100,11 +1464,11 @@ export const GLOSSARY = {
       columnaEvidencias: "Evidencias",
     },
     apoyosImplementados: {
-      titulo: "Apoyos implementados",
+      titulo: "Apoyos institucionales (ApoyoPIE)",
       subtitulo:
-        "Apoyos planificados e implementados con trazabilidad operacional de intervenciones y evidencias.",
+        "¿Qué apoyo estamos implementando? Apoyos declarados por el establecimiento con trazabilidad operacional de intervenciones y evidencias.",
       exportarCsv: "Exportar CSV",
-      sinRegistros: "No hay apoyos implementados registrados.",
+      sinRegistros: "No hay apoyos institucionales (ApoyoPIE) registrados.",
       columnaEstudiante: "Estudiante",
       columnaApoyo: "Apoyo",
       columnaResponsable: "Responsable",
@@ -1163,12 +1527,12 @@ export const GLOSSARY = {
       pacisBorrador: "PACI en borrador",
       intervencionesUltimoMes: "Intervenciones (30 días)",
       evidenciasUltimoMes: "Evidencias (30 días)",
-      apoyosActivos: "Apoyos implementados activos",
-      apoyosSuspendidos: "Apoyos implementados suspendidos",
-      apoyosFinalizados: "Apoyos implementados finalizados",
-      apoyosConActividad: "Apoyos con actividad vinculada",
-      apoyosSinActividad: "Apoyos sin actividad vinculada",
-      apoyosConEvidencia: "Apoyos con evidencia operacional",
+      apoyosActivos: "Apoyos institucionales activos",
+      apoyosSuspendidos: "Apoyos institucionales suspendidos",
+      apoyosFinalizados: "Apoyos institucionales finalizados",
+      apoyosConActividad: "Apoyos institucionales con actividad vinculada",
+      apoyosSinActividad: "Apoyos institucionales sin actividad vinculada",
+      apoyosConEvidencia: "Apoyos institucionales con evidencia operacional",
     },
     alertas: {
       titulo: "Alertas prioritarias",

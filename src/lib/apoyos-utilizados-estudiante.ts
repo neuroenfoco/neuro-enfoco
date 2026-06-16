@@ -1,20 +1,22 @@
 /**
- * Apoyos de participación UTILIZADOS — fuente canónica para lectura por estudiante.
+ * Uso del apoyo por estudiante — agregación desde evidencias (Sesion).
  *
- * ## Modelo (entidades existentes)
+ * **Pregunta que responde:** «¿Qué apoyos del catálogo ha utilizado o documentado
+ * el equipo en intervenciones de este estudiante?»
  *
- * | Concepto | Entidad / campo | Rol |
- * |----------|-----------------|-----|
- * | **Apoyo utilizado (canónico)** | `Sesion.apoyosUtilizados` | IDs del catálogo institucional al registrar evidencia |
+ * ## Capas semánticas (A18.5)
+ *
+ * | Capa | Entidad / campo | Rol |
+ * |------|-----------------|-----|
+ * | **Uso del apoyo (canónico)** | `Sesion.apoyosUtilizados` | IDs del catálogo ApoyoSesionId al registrar evidencia |
  * | **Estrategia que ayudó (legacy)** | `Sesion.estrategiasQueAyudaron` | Espejo textual; se resuelve al mismo catálogo cuando es posible |
  * | **Apoyo planificado** | `ObjetivoPIE.apoyosPlanificadosIds` | Intención pedagógica; no es uso documentado (fuera de este módulo) |
+ * | **Apoyo institucional** | `ApoyoPIE` | ¿Qué apoyo implementamos? Distinto del uso en cada intervención |
  * | **Espejo en intervención** | `Intervencion.apoyosUtilizados` | Labels denormalizados al guardar; fallback si no hay evidencia |
- * | **Apoyo implementado** | `ApoyoImplementado` (pie-apoyos-storage) | Período declarado por el equipo; concepto administrativo distinto |
+ * | **ApoyoImplementado (legacy)** | `pie-apoyos-storage` | Período administrativo opcional; distinto de ApoyoPIE |
  *
- * **Fuente efectiva de verdad para «qué apoyos usamos»:**
+ * **Fuente efectiva de verdad para «¿qué apoyo utilizamos hoy?»:**
  * evidencia (`Sesion`) resuelta con `resolverApoyosDesdeSesion` (IDs + legacy unificados).
- *
- * No existe entidad «apoyo efectivo» separada: el uso documentado en intervención es el apoyo utilizado.
  */
 
 import { resolverApoyosDesdeSesion } from "@/lib/apoyos-consolidados-objetivo";

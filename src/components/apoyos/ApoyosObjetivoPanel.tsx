@@ -7,11 +7,13 @@ import {
 import { ApoyoIntervencionesPanel } from "@/components/apoyos/ApoyoIntervencionesPanel";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
-  APOYO_EFECTIVIDAD_ESTADO_STYLES,
+  APOYO_ESTADO_OPERACIONAL_STYLES,
   getApoyoEfectividadView,
+  getApoyoEstadoOperacional,
+  getObjetivoApoyosEstadoOperacionalResumen,
 } from "@/lib/apoyos/apoyo-efectividad-view";
 import {
-  createApoyoPIE,
+  createApoyoPIEAsync,
   deleteApoyoPIE,
   updateApoyoPIE,
 } from "@/lib/apoyos/apoyos-storage";
@@ -20,11 +22,25 @@ import {
   type ApoyoPIEResumen,
   type ObjetivoApoyosView,
 } from "@/lib/apoyos/apoyos-view";
-import type { ApoyoPIETipo } from "@/lib/apoyos/apoyos-types";
+import type { ApoyoPIETipo, ApoyoPIEEstado } from "@/lib/apoyos/apoyos-types";
 import { formatMarcoFechaDisplay } from "@/lib/marco-institucional-pie-storage";
 import { useCallback, useEffect, useState } from "react";
 
 const COPY = GLOSSARY.apoyosImplementados;
+
+const APOYO_ESTADO_ORDER: Record<ApoyoPIEEstado, number> = {
+  activo: 0,
+  suspendido: 1,
+  finalizado: 2,
+};
+
+function sortApoyosPorEstado(apoyos: ApoyoPIEResumen[]): ApoyoPIEResumen[] {
+  return [...apoyos].sort(
+    (left, right) =>
+      APOYO_ESTADO_ORDER[left.estadoId] - APOYO_ESTADO_ORDER[right.estadoId] ||
+      left.nombre.localeCompare(right.nombre, "es")
+  );
+}
 
 type ApoyosObjetivoPanelProps = {
   objetivoId: string;
@@ -32,6 +48,7 @@ type ApoyosObjetivoPanelProps = {
   prefilled?: { nombre: string; tipo: ApoyoPIETipo } | null;
   onPrefilledConsumed?: () => void;
   onVinculosChanged?: () => void;
+  primary?: boolean;
 };
 
 export function ApoyosObjetivoPanel({
@@ -40,6 +57,7 @@ export function ApoyosObjetivoPanel({
   prefilled,
   onPrefilledConsumed,
   onVinculosChanged,
+  primary = false,
 }: ApoyosObjetivoPanelProps) {
   const [view, setView] = useState<ObjetivoApoyosView | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -72,16 +90,19 @@ export function ApoyosObjetivoPanel({
   const editingApoyo = editingId
     ? view.apoyos.find((item) => item.id === editingId)
     : null;
+  const apoyosOrdenados = sortApoyosPorEstado(view.apoyos);
+  const resumenOperacional = getObjetivoApoyosEstadoOperacionalResumen(objetivoId);
+  const RESUMEN_COPY = COPY.resumenOperacionalObjetivo;
 
-  function handleCreate(values: ApoyoPIEFormValues) {
+  async function handleCreate(values: ApoyoPIEFormValues) {
     setIsSubmitting(true);
-    const created = createApoyoPIE({
+    const created = await createApoyoPIEAsync({
       estudianteId,
       objetivoPieId: objetivoId,
       nombre: values.nombre,
       tipo: values.tipo,
       descripcion: values.descripcion || undefined,
-      responsable: values.responsable || undefined,
+      responsableProfesionalId: values.responsableProfesionalId || undefined,
       frecuencia: values.frecuencia || undefined,
       estado: values.estado,
     });
@@ -98,7 +119,7 @@ export function ApoyosObjetivoPanel({
       nombre: values.nombre,
       tipo: values.tipo,
       descripcion: values.descripcion || undefined,
-      responsable: values.responsable || undefined,
+      responsableProfesionalId: values.responsableProfesionalId || undefined,
       frecuencia: values.frecuencia || undefined,
       estado: values.estado,
     });
@@ -120,10 +141,22 @@ export function ApoyosObjetivoPanel({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/30 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
+    <section
+      className={`mt-8 rounded-2xl border p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8 ${
+        primary
+          ? "border-emerald-300/70 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/20 ring-1 ring-emerald-100/80"
+          : "border-emerald-200/60 bg-gradient-to-br from-emerald-50/30 to-white"
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-800/90">
+          <h2
+            className={
+              primary
+                ? "text-base font-bold uppercase tracking-wide text-emerald-900"
+                : "text-sm font-semibold uppercase tracking-wide text-emerald-800/90"
+            }
+          >
             {COPY.titulo}
           </h2>
           <p className="mt-1 text-sm text-slate-600">{COPY.subtituloObjetivo}</p>
@@ -156,7 +189,7 @@ export function ApoyosObjetivoPanel({
             submitLabel={COPY.guardar}
             isSubmitting={isSubmitting}
             onCancel={() => setShowForm(false)}
-            onSubmit={handleCreate}
+            onSubmit={(values) => void handleCreate(values)}
           />
         </div>
       ) : null}
@@ -172,7 +205,8 @@ export function ApoyosObjetivoPanel({
               nombre: editingApoyo.nombre,
               tipo: editingApoyo.tipo,
               descripcion: editingApoyo.descripcion ?? "",
-              responsable: editingApoyo.responsable ?? "",
+              responsableProfesionalId:
+                editingApoyo.responsableProfesionalId ?? "",
               frecuencia: editingApoyo.frecuencia ?? "",
               estado: editingApoyo.estadoId,
             }}
@@ -187,21 +221,56 @@ export function ApoyosObjetivoPanel({
       {view.apoyos.length === 0 ? (
         <p className="mt-6 text-sm text-slate-600">{COPY.sinApoyos}</p>
       ) : (
-        <ul className="mt-6 space-y-3">
-          {view.apoyos.map((apoyo) => (
-            <ApoyoItem
-              key={apoyo.id}
-              apoyo={apoyo}
-              estudianteId={estudianteId}
-              onEdit={() => {
-                setShowForm(false);
-                setEditingId(apoyo.id);
-              }}
-              onDelete={() => handleDelete(apoyo.id)}
-              onVinculosChanged={handleVinculosChanged}
-            />
-          ))}
-        </ul>
+        <>
+          <div className="mt-6 rounded-xl border border-slate-200 bg-white/90 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">
+              {RESUMEN_COPY.titulo}
+            </h3>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ResumenOperacionalKpi
+                label={RESUMEN_COPY.usoFrecuente}
+                value={resumenOperacional.usoFrecuente}
+              />
+              <ResumenOperacionalKpi
+                label={RESUMEN_COPY.usoDocumentado}
+                value={resumenOperacional.usoDocumentado}
+              />
+              <ResumenOperacionalKpi
+                label={RESUMEN_COPY.sinUsoDocumentado}
+                value={resumenOperacional.sinUsoDocumentado}
+              />
+              <ResumenOperacionalKpi
+                label={RESUMEN_COPY.sinTrazabilidad}
+                value={resumenOperacional.sinTrazabilidad}
+              />
+            </dl>
+            {resumenOperacional.sinTrazabilidad > 0 ? (
+              <p className="mt-3 text-xs text-amber-800">
+                {RESUMEN_COPY.alertaSinTrazabilidad}
+              </p>
+            ) : null}
+            {resumenOperacional.sinUsoDocumentado > 0 ? (
+              <p className="mt-2 text-xs text-amber-800">
+                {RESUMEN_COPY.alertaSinUsoDocumentado}
+              </p>
+            ) : null}
+          </div>
+          <ul className="mt-6 space-y-3">
+            {apoyosOrdenados.map((apoyo) => (
+              <ApoyoItem
+                key={apoyo.id}
+                apoyo={apoyo}
+                estudianteId={estudianteId}
+                onEdit={() => {
+                  setShowForm(false);
+                  setEditingId(apoyo.id);
+                }}
+                onDelete={() => handleDelete(apoyo.id)}
+                onVinculosChanged={handleVinculosChanged}
+              />
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );
@@ -212,6 +281,23 @@ function Kpi({ label, value }: { label: string; value: number }) {
     <div className="rounded-xl border border-slate-100 bg-white/80 p-4">
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
       <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function ResumenOperacionalKpi({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
         {value}
       </dd>
     </div>
@@ -232,10 +318,11 @@ function ApoyoItem({
   onVinculosChanged: () => void;
 }) {
   const COPY = GLOSSARY.apoyosImplementados;
-  const EF_COPY = COPY.efectividadOperacional;
+  const OP_COPY = COPY.estadoOperacionalApoyo;
   const efectividad = getApoyoEfectividadView(apoyo.id);
+  const estadoOperacional = getApoyoEstadoOperacional(apoyo.id);
 
-  if (!efectividad) return null;
+  if (!efectividad || !estadoOperacional) return null;
 
   return (
     <li className="rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -246,20 +333,21 @@ function ApoyoItem({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${APOYO_EFECTIVIDAD_ESTADO_STYLES[efectividad.estado]}`}
+            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${APOYO_ESTADO_OPERACIONAL_STYLES[estadoOperacional.estado]}`}
           >
-            {efectividad.estadoLabel}
+            {estadoOperacional.label}
           </span>
           <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-100">
             {apoyo.estado}
           </span>
         </div>
       </div>
-      <p className="mt-2 text-xs text-slate-500">{efectividad.observacion}</p>
+      <p className="mt-2 text-xs text-slate-500">{estadoOperacional.observacion}</p>
+      <p className="mt-1 text-xs text-slate-400">{OP_COPY.aclaracion}</p>
       <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-4">
         <div>
-          <dt className="font-medium text-slate-500">{EF_COPY.estadoOperacional}</dt>
-          <dd>{efectividad.estadoLabel}</dd>
+          <dt className="font-medium text-slate-500">{OP_COPY.titulo}</dt>
+          <dd>{estadoOperacional.label}</dd>
         </div>
         <div>
           <dt className="font-medium text-slate-500">{COPY.metricaIntervenciones}</dt>

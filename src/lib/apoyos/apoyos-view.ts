@@ -1,9 +1,17 @@
+/**
+ * Vistas de lectura para apoyos institucionales (ApoyoPIE).
+ *
+ * **Pregunta que responde:** «¿Qué apoyo estamos implementando?» — registro
+ * institucional con responsable, frecuencia, estado y vínculo con objetivos.
+ *
+ * Distinto de:
+ * - **Uso del apoyo** (`Sesion.apoyosUtilizados`): ¿qué utilizamos hoy en una intervención?
+ * - **Apoyos planificados** (`ObjetivoPIE.apoyosPlanificadosIds`): intención en la planificación.
+ */
+
 import { GLOSSARY } from "@/lib/copy/glossary";
-import { readApoyosPIE } from "@/lib/apoyos/apoyos-persistence";
-import {
-  getApoyosByEstudianteId,
-  getApoyosByObjetivoId,
-} from "@/lib/apoyos/apoyos-storage";
+import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-resolve";
+import { getApoyosRepository } from "@/lib/repositories/repository-factory";
 import type { ApoyoPIE, ApoyoPIEEstado } from "@/lib/apoyos/apoyos-types";
 
 export type ApoyoPIEResumen = {
@@ -13,6 +21,7 @@ export type ApoyoPIEResumen = {
   tipoLabel: string;
   descripcion?: string;
   responsable?: string;
+  responsableProfesionalId?: string;
   frecuencia?: string;
   estado: string;
   estadoId: ApoyoPIEEstado;
@@ -52,14 +61,37 @@ export function getApoyoPIEEstadoLabel(estado: ApoyoPIEEstado): string {
   }
 }
 
+type ApoyoResponsableSource = Pick<
+  ApoyoPIE,
+  "responsableNombreSnapshot" | "responsableProfesionalId" | "responsable"
+>;
+
+export function getApoyoResponsableDisplay(apoyo: ApoyoResponsableSource): string {
+  const snapshot = apoyo.responsableNombreSnapshot?.trim();
+  if (snapshot) return snapshot;
+
+  const profesionalId = apoyo.responsableProfesionalId?.trim();
+  if (profesionalId) {
+    return getProfesionalDisplayNombre(profesionalId);
+  }
+
+  const legacy = apoyo.responsable?.trim();
+  if (legacy) return legacy;
+
+  return "—";
+}
+
 function toResumen(apoyo: ApoyoPIE): ApoyoPIEResumen {
+  const responsableDisplay = getApoyoResponsableDisplay(apoyo);
   return {
     id: apoyo.id,
     nombre: apoyo.nombre,
     tipo: apoyo.tipo,
     tipoLabel: getApoyoPIETipoLabel(apoyo.tipo),
     descripcion: apoyo.descripcion,
-    responsable: apoyo.responsable,
+    responsable:
+      responsableDisplay === "—" ? undefined : responsableDisplay,
+    responsableProfesionalId: apoyo.responsableProfesionalId,
     frecuencia: apoyo.frecuencia,
     estado: getApoyoPIEEstadoLabel(apoyo.estado),
     estadoId: apoyo.estado,
@@ -76,7 +108,9 @@ function countByEstado(apoyos: ApoyoPIEResumen[]) {
 }
 
 export function getObjetivoApoyosView(objetivoId: string): ObjetivoApoyosView {
-  const apoyos = getApoyosByObjetivoId(objetivoId).map(toResumen);
+  const apoyos = getApoyosRepository()
+    .getByObjetivoId(objetivoId)
+    .map(toResumen);
   const counts = countByEstado(apoyos);
 
   return {
@@ -91,7 +125,9 @@ export function getObjetivoApoyosView(objetivoId: string): ObjetivoApoyosView {
 export function getEstudianteApoyosView(
   estudianteId: string
 ): EstudianteApoyosView {
-  const apoyos = getApoyosByEstudianteId(estudianteId).map(toResumen);
+  const apoyos = getApoyosRepository()
+    .getByEstudianteId(estudianteId)
+    .map(toResumen);
   const counts = countByEstado(apoyos);
 
   return {
@@ -108,7 +144,7 @@ export function getApoyosImplementadosIndicadores(): {
   apoyosSuspendidos: number;
   apoyosFinalizados: number;
 } {
-  const resumenes = readApoyosPIE().map(toResumen);
+  const resumenes = getApoyosRepository().getAll().map(toResumen);
   const counts = countByEstado(resumenes);
 
   return {

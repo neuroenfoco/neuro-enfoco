@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { HallazgoEntradaHibrida } from "@/components/perfil/HallazgoEntradaHibrida";
 import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
 import { GLOSSARY } from "@/lib/copy/glossary";
@@ -40,7 +41,7 @@ import {
   type HallazgoTipo,
 } from "@/lib/perfil-hallazgos-storage";
 import {
-  registrarIntervencionConEvidencia,
+  registrarIntervencionConEvidenciaAsync,
   type EvidenciaIntervencionInput,
 } from "@/lib/registrar-intervencion-con-evidencia";
 import {
@@ -55,17 +56,16 @@ import {
 } from "@/lib/sessions-storage";
 import {
   formatProfesionalNombreCompleto,
-  getDefaultProfesionalId,
   getProfesionalRolNombre,
-  getProfesionalesActivos,
-  type Profesional,
 } from "@/lib/institucional/profesionales-storage";
 import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-resolve";
+import type { Estudiante } from "@/lib/repositories/estudiantes-repository";
+import type { Profesional } from "@/lib/repositories/profesionales-repository";
 import {
-  getEstudianteIniciales,
-  getEstudiantes,
-  type Estudiante,
-} from "@/lib/students-storage";
+  getEstudiantesRepositoryAsync,
+  getProfesionalesRepository,
+} from "@/lib/repositories/repository-factory";
+import { getEstudianteIniciales } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -80,6 +80,20 @@ function todayInputValue(): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+async function loadEstudiantesIncludingId(
+  estudianteId?: string
+): Promise<Estudiante[]> {
+  const repo = getEstudiantesRepositoryAsync();
+  const list = await repo.getAll();
+  const trimmed = estudianteId?.trim();
+  if (!trimmed || list.some((item) => item.id === trimmed)) {
+    return list;
+  }
+
+  const selected = await repo.getById(trimmed);
+  return selected ? [...list, selected] : list;
 }
 
 export default function NuevaIntervencionPage() {
@@ -98,7 +112,7 @@ export default function NuevaIntervencionPage() {
     Profesional[]
   >([]);
   const [profesionalId, setProfesionalId] = useState(() =>
-    getDefaultProfesionalId()
+    getProfesionalesRepository().getDefaultId()
   );
   const [espacioId, setEspacioId] = useState<SesionEspacioId>("sala_multisensorial");
 
@@ -134,26 +148,45 @@ export default function NuevaIntervencionPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const list = getEstudiantes();
-    setStudents(list);
+    let cancelled = false;
 
-    const params = new URLSearchParams(window.location.search);
-    const estudianteFromQuery = params.get("estudianteId");
-    if (
-      estudianteFromQuery &&
-      list.some((student) => student.id === estudianteFromQuery)
-    ) {
-      setSelectedStudentId(estudianteFromQuery);
+    async function loadStudents() {
+      const params = new URLSearchParams(window.location.search);
+      const estudianteFromQuery = params.get("estudianteId") ?? "";
+
+      try {
+        const list = await loadEstudiantesIncludingId(
+          estudianteFromQuery || undefined
+        );
+        if (cancelled) return;
+
+        setStudents(list);
+        if (
+          estudianteFromQuery &&
+          list.some((student) => student.id === estudianteFromQuery)
+        ) {
+          setSelectedStudentId(estudianteFromQuery);
+        }
+      } catch {
+        if (!cancelled) setStudents([]);
+      }
     }
+
+    void loadStudents();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    const activos = getProfesionalesActivos();
+    const profesionalesRepository = getProfesionalesRepository();
+    const activos = profesionalesRepository.getActivos();
     setProfesionalesActivos(activos);
     setProfesionalId((current) =>
       activos.some((item) => item.id === current)
         ? current
-        : (activos[0]?.id ?? getDefaultProfesionalId())
+        : (activos[0]?.id ?? profesionalesRepository.getDefaultId())
     );
   }, []);
 
@@ -238,13 +271,13 @@ export default function NuevaIntervencionPage() {
     };
   }
 
-  function persistIntervencionConEvidencia(): boolean {
+  async function persistIntervencionConEvidencia(): Promise<boolean> {
     if (!selectedStudentId.trim()) {
       setSaveMessage(GLOSSARY.evaluacionCaptura.seleccionaEstudiante);
       return false;
     }
 
-    const result = registrarIntervencionConEvidencia({
+    const result = await registrarIntervencionConEvidenciaAsync({
       evidencia: buildEvidenciaInput(),
       hallazgosPresentesIds: selectedHallazgoIds,
     });
@@ -257,14 +290,18 @@ export default function NuevaIntervencionPage() {
     return true;
   }
 
-  function handleSaveAndNavigate(
+  async function handleSaveAndNavigate(
     destination: typeof ROUTES.intervenciones | `/estudiantes/${string}`
   ) {
     if (isSaving) return;
 
-    if (!persistIntervencionConEvidencia()) return;
-
     setIsSaving(true);
+    const saved = await persistIntervencionConEvidencia();
+    if (!saved) {
+      setIsSaving(false);
+      return;
+    }
+
     setSaveMessage(GLOSSARY.intervencion.guardadaOk);
     window.setTimeout(() => {
       router.push(destination);
@@ -305,6 +342,15 @@ export default function NuevaIntervencionPage() {
       </header>
 
         <main className="flex-1 px-8 py-8">
+          <div className="mx-auto mb-6 max-w-3xl">
+            <InstitutionalInfoCard
+              variant="info"
+              title={GLOSSARY.institutionalGuidance.intervenciones.info.title}
+              body={GLOSSARY.institutionalGuidance.intervenciones.info.body}
+              detail={GLOSSARY.institutionalGuidance.intervenciones.info.detail}
+            />
+          </div>
+
           {saveMessage && (
             <div
               role="status"

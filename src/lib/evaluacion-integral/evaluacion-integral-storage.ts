@@ -10,6 +10,7 @@ import {
 } from "@/lib/evaluacion-integral/evaluacion-integral-persistence";
 import {
   assertEstudianteExiste,
+  assertEstudianteExisteAsync,
   tieneEvaluacionIngresoCerrada,
   validateFechasEvaluacionIntegral,
 } from "@/lib/evaluacion-integral/evaluacion-integral-validacion";
@@ -17,6 +18,7 @@ import { deleteHallazgosEvaluativosByEvaluacionId } from "@/lib/evaluacion-integ
 import { deleteConclusionesEvaluativasByEvaluacionId } from "@/lib/evaluacion-integral/conclusion-evaluativa-storage";
 import { deleteVinculosByEvaluacionId } from "@/lib/evaluacion-integral/vinculo-conclusion-objetivo-storage";
 import { deleteParticipacionesByEvaluacionId } from "@/lib/evaluacion-integral/participacion-evaluacion-integral-storage";
+import { tieneIngresoPIECompletado } from "@/lib/ingreso-pie";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -51,12 +53,9 @@ export function getEvaluacionIngresoCerradaByEstudianteId(
   );
 }
 
-export function saveEvaluacionIntegral(
+function persistEvaluacionIntegral(
   input: SaveEvaluacionIntegralInput
 ): EvaluacionIntegral | null {
-  const estudianteError = assertEstudianteExiste(input.estudianteId);
-  if (estudianteError) return null;
-
   const fechaError = validateFechasEvaluacionIntegral({
     fechaInicio: input.fechaInicio,
     fechaTermino: input.fechaTermino,
@@ -68,7 +67,7 @@ export function saveEvaluacionIntegral(
   const evaluaciones = readEvaluacionesIntegrales();
   if (
     tipo === "ingreso" &&
-    tieneEvaluacionIngresoCerrada(evaluaciones, input.estudianteId.trim())
+    tieneIngresoPIECompletado(input.estudianteId.trim())
   ) {
     return null;
   }
@@ -93,6 +92,24 @@ export function saveEvaluacionIntegral(
 
   writeEvaluacionesIntegrales([evaluacion, ...evaluaciones]);
   return evaluacion;
+}
+
+export function saveEvaluacionIntegral(
+  input: SaveEvaluacionIntegralInput
+): EvaluacionIntegral | null {
+  const estudianteError = assertEstudianteExiste(input.estudianteId);
+  if (estudianteError) return null;
+
+  return persistEvaluacionIntegral(input);
+}
+
+export async function saveEvaluacionIntegralAsync(
+  input: SaveEvaluacionIntegralInput
+): Promise<EvaluacionIntegral | null> {
+  const estudianteError = await assertEstudianteExisteAsync(input.estudianteId);
+  if (estudianteError) return null;
+
+  return persistEvaluacionIntegral(input);
 }
 
 export function updateEvaluacionIntegral(
@@ -124,7 +141,7 @@ export function updateEvaluacionIntegral(
   if (
     tipo === "ingreso" &&
     tipo !== current.tipo &&
-    tieneEvaluacionIngresoCerrada(items, current.estudianteId, current.id)
+    tieneIngresoPIECompletado(current.estudianteId)
   ) {
     return null;
   }
@@ -181,7 +198,7 @@ export function marcarEvaluacionIntegralCerrada(
 
   if (
     current.tipo === "ingreso" &&
-    tieneEvaluacionIngresoCerrada(items, current.estudianteId, current.id)
+    tieneIngresoPIECompletado(current.estudianteId)
   ) {
     return null;
   }

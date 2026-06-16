@@ -392,17 +392,17 @@ export const CATALOGO_PROFESIONALES_SESION: readonly ProfesionalSesionDef[] = [
   },
   {
     id: "educadora-diferencial",
-    nombre: "Educadora diferencial",
+    nombre: "Educador/a diferencial",
     rol: "PIE",
   },
   {
     id: "psicologa-escolar",
-    nombre: "Psicóloga escolar",
+    nombre: "Psicólogo/a escolar",
     rol: "Convivencia escolar",
   },
   {
     id: "fonoaudiologa",
-    nombre: "Fonoaudióloga",
+    nombre: "Fonoaudiólogo/a",
     rol: "Apoyo especializado",
   },
   {

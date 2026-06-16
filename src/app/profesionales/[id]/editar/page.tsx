@@ -8,10 +8,7 @@ import {
 } from "@/components/institucional/ProfesionalForm";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
-import {
-  getProfesionalById,
-  updateProfesional,
-} from "@/lib/institucional/profesionales-storage";
+import { getProfesionalesRepository } from "@/lib/repositories/repository-factory";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,7 +26,7 @@ export default function EditarProfesionalPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const profesional = getProfesionalById(profesionalId);
+    const profesional = getProfesionalesRepository().getById(profesionalId);
     if (!profesional) {
       setNotFound(true);
       return;
@@ -42,7 +39,7 @@ export default function EditarProfesionalPage() {
     if (isSaving) return;
 
     setIsSaving(true);
-    const updated = updateProfesional(profesionalId, {
+    const updated = getProfesionalesRepository().update(profesionalId, {
       nombres: values.nombres,
       apellidos: values.apellidos,
       rolPrincipalId: values.rolPrincipalId,
@@ -59,7 +56,7 @@ export default function EditarProfesionalPage() {
   }
 
   return (
-    <AppShell activeNav="intervenciones">
+    <AppShell activeNav="profesionales">
       <main className="flex-1 px-8 py-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col">
           <div className="mb-8">

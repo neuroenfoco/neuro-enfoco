@@ -1,6 +1,7 @@
 import {
   getHallazgoById,
   getHallazgosByEstudianteId,
+  getHallazgosConsolidadosPerfilBase,
   getObservacionesByEvidenciaId,
   type HallazgoPerfil,
   type HallazgoTipo,
@@ -9,7 +10,6 @@ import {
   EMPTY_QUIEN_ES_MESSAGE,
   getFichaHeaderKpisForEstudiante,
   getSesionesByEstudianteId,
-  hasSesionesForEstudiante,
   type FichaHeaderKpis,
   type LogroReciente,
 } from "@/lib/sessions-storage";
@@ -74,12 +74,29 @@ export function getHallazgosResumenPorTipo(
   ).map(toResumenItem);
 }
 
-/** Top fortalezas con al menos una confirmación. */
+/** Hallazgos consolidados en Perfil Base por tipo (sin exigir confirmaciones). */
+export function getHallazgosConsolidadosResumen(
+  estudianteId: string,
+  tipo: HallazgoTipo
+): HallazgoResumenItem[] {
+  return sortHallazgosPorConfirmaciones(
+    getHallazgosConsolidadosPerfilBase(estudianteId, tipo)
+  ).map(toResumenItem);
+}
+
+/** Intereses consolidados en Perfil Base (sin exigir confirmaciones en intervenciones). */
+export function getInteresesConsolidadosResumen(
+  estudianteId: string
+): HallazgoResumenItem[] {
+  return getHallazgosConsolidadosResumen(estudianteId, "interes");
+}
+
+/** Top fortalezas consolidadas en Perfil Base. */
 export function getTopFortalezasConfirmadas(
   estudianteId: string,
   limit = 5
 ): HallazgoResumenItem[] {
-  return getHallazgosResumenPorTipo(estudianteId, "fortaleza").slice(0, limit);
+  return getHallazgosConsolidadosResumen(estudianteId, "fortaleza").slice(0, limit);
 }
 
 /** Fortalezas distintas con al menos una confirmación (alineado con Aprendizajes). */
@@ -156,20 +173,21 @@ const INTERES_CON_ARTICULO: Record<string, string> = {
   Deportes: "los deportes",
 };
 
-/** Narrativa «¿Quién es?» desde hallazgos confirmados. */
+/** Narrativa «¿Quién es?» desde conocimiento consolidado en Perfil Base. */
 export function generateQuienEsResumenDesdeHallazgos(
   estudianteId: string,
   nombre: string
 ): string | null {
-  if (!hasSesionesForEstudiante(estudianteId)) return null;
-
-  const fortalezas = getHallazgosResumenPorTipo(estudianteId, "fortaleza")
+  const fortalezas = getHallazgosConsolidadosResumen(estudianteId, "fortaleza")
     .slice(0, 3)
     .map((item) => item.nombre);
-  const intereses = getHallazgosResumenPorTipo(estudianteId, "interes")
+  const intereses = getHallazgosConsolidadosResumen(estudianteId, "interes")
     .slice(0, 3)
     .map((item) => item.nombre);
-  const contextos = getHallazgosResumenPorTipo(estudianteId, "contexto_exito")
+  const contextos = getHallazgosConsolidadosResumen(
+    estudianteId,
+    "contexto_exito"
+  )
     .slice(0, 3)
     .map((item) => item.nombre);
 

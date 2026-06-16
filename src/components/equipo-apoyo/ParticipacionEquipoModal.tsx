@@ -10,8 +10,8 @@ import {
 } from "@/lib/institucional/roles-profesional-catalog";
 import {
   formatProfesionalNombreCompleto,
-  getProfesionalesActivos,
 } from "@/lib/institucional/profesionales-storage";
+import { getProfesionalesRepository } from "@/lib/repositories/repository-factory";
 import type { AmbitoEquipo } from "@/lib/institucional/ambitos-equipo";
 import { useEffect, useState } from "react";
 
@@ -57,7 +57,7 @@ export function ParticipacionEquipoModal({
   isSaving = false,
   errorMessage,
 }: ParticipacionEquipoModalProps) {
-  const profesionales = getProfesionalesActivos();
+  const profesionales = getProfesionalesRepository().getActivos();
   const [values, setValues] = useState<ParticipacionEquipoFormValues>(() => {
     if (participacion) return participacionToFormValues(participacion);
     const defaultProfesional = profesionales[0];

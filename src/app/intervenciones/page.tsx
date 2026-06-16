@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
 import { eliminarIntervencionPorEvidenciaId } from "@/lib/intervenciones-storage";
@@ -9,13 +10,15 @@ import {
   isStoredSessionId,
   type SesionTableRow,
 } from "@/lib/sessions-storage";
-import { getEstudiantes, type Estudiante } from "@/lib/students-storage";
+import type { Estudiante } from "@/lib/repositories/estudiantes-repository";
+import { getEstudiantesRepository } from "@/lib/repositories/repository-factory";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const DELETE_CONFIRMATION_TEXT = "ELIMINAR";
 
 export default function IntervencionesPage() {
+  const guidance = GLOSSARY.institutionalGuidance.intervenciones;
   const [sessions, setSessions] = useState<SesionTableRow[]>([]);
   const [students, setStudents] = useState<Estudiante[]>([]);
   const [filterStudentId, setFilterStudentId] = useState("");
@@ -29,7 +32,7 @@ export default function IntervencionesPage() {
 
   function refreshSessions() {
     setSessions(getStoredTableRows());
-    setStudents(getEstudiantes());
+    setStudents(getEstudiantesRepository().getAll());
   }
 
   const filteredSessions = useMemo(() => {
@@ -109,6 +112,24 @@ export default function IntervencionesPage() {
             {deleteMessage}
           </p>
         )}
+
+        <div className="mb-6 space-y-4">
+          <InstitutionalInfoCard
+            variant="info"
+            title={guidance.info.title}
+            body={guidance.info.body}
+            detail={guidance.info.detail}
+          />
+
+          {sessions.length === 0 ? (
+            <InstitutionalInfoCard
+              variant="recomendacion"
+              body={guidance.recomendacionSinRegistros.body}
+              ctaLabel={guidance.recomendacionSinRegistros.cta}
+              ctaHref={ROUTES.intervencionesNueva}
+            />
+          ) : null}
+        </div>
 
         <section className="mb-6 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,60,50,0.06)]">
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">

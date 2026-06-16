@@ -7,7 +7,7 @@ import {
 } from "@/components/institucional/ProfesionalForm";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
-import { saveProfesional } from "@/lib/institucional/profesionales-storage";
+import { getProfesionalesRepository } from "@/lib/repositories/repository-factory";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -21,7 +21,7 @@ export default function NuevoProfesionalPage() {
     if (isSaving) return;
 
     setIsSaving(true);
-    const saved = saveProfesional({
+    const saved = getProfesionalesRepository().save({
       nombres: values.nombres,
       apellidos: values.apellidos,
       rolPrincipalId: values.rolPrincipalId,
@@ -38,7 +38,7 @@ export default function NuevoProfesionalPage() {
   }
 
   return (
-    <AppShell activeNav="intervenciones">
+    <AppShell activeNav="profesionales">
       <main className="flex-1 px-8 py-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col">
           <div className="mb-8">

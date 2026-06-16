@@ -40,6 +40,10 @@ export function isApoyoPIE(value: unknown): value is ApoyoPIE {
     typeof item.tipo === "string" &&
     isApoyoPIETipo(item.tipo) &&
     (typeof item.descripcion === "string" || item.descripcion === undefined) &&
+    (typeof item.responsableProfesionalId === "string" ||
+      item.responsableProfesionalId === undefined) &&
+    (typeof item.responsableNombreSnapshot === "string" ||
+      item.responsableNombreSnapshot === undefined) &&
     (typeof item.responsable === "string" || item.responsable === undefined) &&
     (typeof item.frecuencia === "string" || item.frecuencia === undefined) &&
     typeof item.estado === "string" &&
@@ -54,6 +58,9 @@ export function normalizeApoyoPIE(raw: ApoyoPIE): ApoyoPIE {
     ...raw,
     nombre: raw.nombre.trim(),
     descripcion: raw.descripcion?.trim() || undefined,
+    responsableProfesionalId: raw.responsableProfesionalId?.trim() || undefined,
+    responsableNombreSnapshot:
+      raw.responsableNombreSnapshot?.trim() || undefined,
     responsable: raw.responsable?.trim() || undefined,
     frecuencia: raw.frecuencia?.trim() || undefined,
     objetivoPieId: raw.objetivoPieId?.trim() || undefined,

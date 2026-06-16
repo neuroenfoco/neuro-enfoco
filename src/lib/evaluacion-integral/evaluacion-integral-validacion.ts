@@ -1,3 +1,4 @@
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
 import { getEstudianteById } from "@/lib/students-storage";
 import type { EvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-types";
 
@@ -82,6 +83,19 @@ export function assertEstudianteExiste(estudianteId: string): string | null {
   const trimmed = estudianteId.trim();
   if (!trimmed) return "Identificador de estudiante no válido.";
   if (!getEstudianteById(trimmed)) return "Estudiante no encontrado.";
+  return null;
+}
+
+export async function assertEstudianteExisteAsync(
+  estudianteId: string
+): Promise<string | null> {
+  const trimmed = estudianteId.trim();
+  if (!trimmed) return "Identificador de estudiante no válido.";
+
+  const estudiante =
+    await getEstudiantesRepositoryAsync().getById(trimmed);
+  if (!estudiante) return "Estudiante no encontrado.";
+
   return null;
 }
 

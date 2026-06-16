@@ -1,15 +1,15 @@
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { getHistorialEvaluaciones } from "@/lib/evaluacion-integral/evaluacion-integral-view";
 import { getTipoIntervencionNombre } from "@/lib/intervenciones-catalog";
-import {
-  getIntervencionesByEstudianteId,
-  type Intervencion,
-} from "@/lib/intervenciones-storage";
 import { formatMarcoFechaDisplay } from "@/lib/marco-institucional-pie-storage";
-import { parseFechaOrdenInstitucional } from "@/lib/shared/fecha-institucional";
-import { getPACIsByEstudianteId } from "@/lib/paci/paci-storage";
 import type { PACI } from "@/lib/paci/paci-types";
-import { getSesionesByIntervencionId } from "@/lib/sessions-storage";
+import {
+  getIntervencionesRepository,
+  getPACIRepository,
+  getSesionesRepository,
+} from "@/lib/repositories/repository-factory";
+import type { Intervencion } from "@/lib/repositories/intervenciones-repository";
+import { parseFechaOrdenInstitucional } from "@/lib/shared/fecha-institucional";
 
 export type EstudianteTimelineTipo = "evaluacion" | "intervencion" | "paci";
 
@@ -69,7 +69,7 @@ function buildPACIEvents(paci: PACI): EstudianteTimelineItem[] {
 }
 
 function getIntervencionFechaOrden(intervencion: Intervencion): number {
-  const sesiones = getSesionesByIntervencionId(intervencion.id);
+  const sesiones = getSesionesRepository().getByIntervencionId(intervencion.id);
   for (const sesion of sesiones) {
     const orden = parseFechaOrden(sesion.fecha);
     if (orden > 0) return orden;
@@ -78,7 +78,7 @@ function getIntervencionFechaOrden(intervencion: Intervencion): number {
 }
 
 function getIntervencionFechaDisplay(intervencion: Intervencion): string {
-  const sesiones = getSesionesByIntervencionId(intervencion.id);
+  const sesiones = getSesionesRepository().getByIntervencionId(intervencion.id);
   const sesionFecha = sesiones.find((item) => item.fecha.trim())?.fecha.trim();
   if (sesionFecha) return sesionFecha;
   return formatMarcoFechaDisplay(intervencion.fecha);
@@ -107,8 +107,10 @@ export function getEstudianteTimelineActividad(
     });
   }
 
-  for (const intervencion of getIntervencionesByEstudianteId(estudianteId)) {
-    const sesiones = getSesionesByIntervencionId(intervencion.id);
+  for (const intervencion of getIntervencionesRepository().getByEstudianteId(
+    estudianteId
+  )) {
+    const sesiones = getSesionesRepository().getByIntervencionId(intervencion.id);
     const tipoNombre = getTipoIntervencionNombre(intervencion.tipoIntervencion);
     const logro = sesiones.find((item) => item.logro.trim())?.logro.trim();
 
@@ -125,7 +127,7 @@ export function getEstudianteTimelineActividad(
     });
   }
 
-  for (const paci of getPACIsByEstudianteId(estudianteId)) {
+  for (const paci of getPACIRepository().getByEstudianteId(estudianteId)) {
     items.push(...buildPACIEvents(paci));
   }
 

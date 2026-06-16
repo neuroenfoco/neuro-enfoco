@@ -766,10 +766,10 @@ export function ObjetivoPIEPlanificacionForm({
           <div className="space-y-6">
             <div>
               <h3 className="text-sm font-semibold text-slate-800">
-                Apoyos de participación
+                {COPY.bloqueApoyosCatalogoTitulo}
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">
-                Mismo catálogo institucional que en el registro de intervenciones.
+                {COPY.bloqueApoyosCatalogoSub}
               </p>
             </div>
             {CATALOGO_APOYOS_PLANIFICADOS.map((categoria) => (

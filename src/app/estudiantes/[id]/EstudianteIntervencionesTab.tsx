@@ -1,6 +1,7 @@
 "use client";
 
 import { IntervencionApoyosRelacionadosPanel } from "@/components/apoyos/IntervencionApoyosRelacionadosPanel";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
 import {
@@ -29,6 +30,7 @@ export function EstudianteIntervencionesTab({
   estudianteId,
   estudiantePrimerNombre,
 }: EstudianteIntervencionesTabProps) {
+  const guidance = GLOSSARY.institutionalGuidance.intervenciones;
   const [filtros, setFiltros] = useState<EstudianteIntervencionesFiltros>(EMPTY_FILTROS);
   const [ficha, setFicha] = useState<EstudianteIntervencionesFicha | null>(() =>
     typeof window === "undefined"
@@ -101,6 +103,22 @@ export function EstudianteIntervencionesTab({
           />
         </div>
       </section>
+
+      <InstitutionalInfoCard
+        variant="info"
+        title={guidance.info.title}
+        body={guidance.info.body}
+        detail={guidance.info.detail}
+      />
+
+      {ficha.kpis.totalIntervenciones === 0 ? (
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={guidance.recomendacionSinRegistros.body}
+          ctaLabel={guidance.recomendacionSinRegistros.cta}
+          ctaHref={`${ROUTES.intervencionesNueva}?estudianteId=${estudianteId}`}
+        />
+      ) : null}
 
       {ficha.totalSinFiltrar > 0 && (
         <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-6">

@@ -1,3 +1,13 @@
+/**
+ * Ficha de uso del apoyo y participación por estudiante.
+ *
+ * **Pregunta que responde:** «¿Qué uso del apoyo y contextos de participación
+ * ha documentado el equipo en las intervenciones de este estudiante?»
+ *
+ * Agrega `Sesion.apoyosUtilizados` (catálogo ApoyoSesionId) y contrasta con
+ * apoyos planificados en objetivos sin uso documentado. No sustituye ApoyoPIE.
+ */
+
 import {
   getApoyoPlanificadoNombre,
   isEspacioPlanificadoId,

@@ -1,20 +1,28 @@
 import { buildEspacioSeedId } from "@/lib/espacios-catalog";
 import { ensureSeedEspacios } from "@/lib/espacios-storage";
+import {
+  assertEstudianteExisteAsync,
+} from "@/lib/evaluacion-integral/evaluacion-integral-validacion";
 import type { TipoIntervencionId } from "@/lib/intervenciones-catalog";
 import {
-  eliminarIntervencionCompleta,
   formatIntervencionFecha,
   saveIntervencion,
-  type Intervencion,
+  saveIntervencionAsync,
+  type SaveIntervencionInput,
 } from "@/lib/intervenciones-storage";
+import { registrarObservacionesHallazgo } from "@/lib/perfil-hallazgos-storage";
+import type { Intervencion } from "@/lib/repositories/intervenciones-repository";
+import {
+  getEstudiantesRepository,
+  getIntervencionesRepository,
+  getSesionesRepository,
+} from "@/lib/repositories/repository-factory";
+import type { Sesion } from "@/lib/repositories/sesiones-repository";
 import {
   getApoyoSesionNombre,
   type ApoyoSesionId,
   type SesionEspacioId,
 } from "@/lib/sesiones-form-catalog";
-import { registrarObservacionesHallazgo } from "@/lib/perfil-hallazgos-storage";
-import { saveSesion, type Sesion } from "@/lib/sessions-storage";
-import { getEstudianteById } from "@/lib/students-storage";
 
 const SESION_ESPACIO_INSTITUCIONAL: Record<SesionEspacioId, string> = {
   sala_multisensorial: buildEspacioSeedId("sala_multisensorial"),
@@ -105,26 +113,11 @@ function sesionFechaToIso(fecha: string, hora?: string): string {
   ).toISOString();
 }
 
-/**
- * Crea una intervención institucional y su evidencia pedagógica vinculada (1:1).
- * Toda evidencia nueva queda asociada mediante `intervencionId`.
- */
-export function registrarIntervencionConEvidencia(
-  input: RegistrarIntervencionConEvidenciaInput
-): RegistrarIntervencionConEvidenciaResult {
-  if (typeof window === "undefined") {
-    return { ok: false, error: "Solo disponible en el cliente." };
-  }
-
-  const estudianteId = input.evidencia.estudianteId?.trim();
-  if (!estudianteId || !getEstudianteById(estudianteId)) {
-    return { ok: false, error: "Estudiante no válido." };
-  }
-
-  ensureSeedEspacios();
-
-  const intervencionId = crypto.randomUUID();
-  const evidenciaId = crypto.randomUUID();
+function buildIntervencionInput(
+  input: RegistrarIntervencionConEvidenciaInput,
+  estudianteId: string,
+  intervencionId: string
+): SaveIntervencionInput {
   const espacioInstitucionalId = resolveInstitucionalEspacioId(
     input.evidencia.espacioId
   );
@@ -136,9 +129,8 @@ export function registrarIntervencionConEvidencia(
     input.descripcion?.trim() ||
     input.evidencia.logro?.trim() ||
     "Intervención registrada";
-  const observaciones = input.observaciones?.trim() ?? "";
 
-  const intervencion = saveIntervencion({
+  return {
     id: intervencionId,
     estudianteId,
     profesionalId: input.evidencia.profesionalId,
@@ -149,15 +141,18 @@ export function registrarIntervencionConEvidencia(
     descripcion,
     objetivosRelacionados: input.evidencia.objetivosTrabajadosIds ?? [],
     apoyosUtilizados: apoyosToIntervencionLabels(input.evidencia.apoyosUtilizados),
-    observaciones,
-  });
+    observaciones: input.observaciones?.trim() ?? "",
+  };
+}
 
-  if (!intervencion) {
-    return {
-      ok: false,
-      error: "No se pudo registrar la intervención institucional.",
-    };
-  }
+function finalizarRegistroIntervencionConEvidencia(
+  input: RegistrarIntervencionConEvidenciaInput,
+  estudianteId: string,
+  intervencion: Intervencion,
+  evidenciaId: string
+): RegistrarIntervencionConEvidenciaResult {
+  const intervencionesRepository = getIntervencionesRepository();
+  const sesionesRepository = getSesionesRepository();
 
   const evidencia: Sesion = {
     ...input.evidencia,
@@ -167,9 +162,9 @@ export function registrarIntervencionConEvidencia(
   };
 
   try {
-    saveSesion(evidencia);
+    sesionesRepository.save(evidencia);
   } catch {
-    eliminarIntervencionCompleta(intervencion.id);
+    intervencionesRepository.delete(intervencion.id);
     return {
       ok: false,
       error: "No se pudo vincular la evidencia a la intervención.",
@@ -186,7 +181,7 @@ export function registrarIntervencionConEvidencia(
         observadoEn: intervencion.fecha,
       });
     } catch {
-      eliminarIntervencionCompleta(intervencion.id);
+      intervencionesRepository.delete(intervencion.id);
       return {
         ok: false,
         error: "No se pudieron registrar las observaciones del perfil.",
@@ -195,4 +190,85 @@ export function registrarIntervencionConEvidencia(
   }
 
   return { ok: true, intervencion, evidencia };
+}
+
+/**
+ * Crea una intervención institucional y su evidencia pedagógica vinculada (1:1).
+ * Toda evidencia nueva queda asociada mediante `intervencionId`.
+ */
+export function registrarIntervencionConEvidencia(
+  input: RegistrarIntervencionConEvidenciaInput
+): RegistrarIntervencionConEvidenciaResult {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "Solo disponible en el cliente." };
+  }
+
+  const estudianteId = input.evidencia.estudianteId?.trim();
+  if (!estudianteId || !getEstudiantesRepository().getById(estudianteId)) {
+    return { ok: false, error: "Estudiante no válido." };
+  }
+
+  ensureSeedEspacios();
+
+  const intervencionId = crypto.randomUUID();
+  const evidenciaId = crypto.randomUUID();
+
+  const intervencion = saveIntervencion(
+    buildIntervencionInput(input, estudianteId, intervencionId)
+  );
+
+  if (!intervencion) {
+    return {
+      ok: false,
+      error: "No se pudo registrar la intervención institucional.",
+    };
+  }
+
+  return finalizarRegistroIntervencionConEvidencia(
+    input,
+    estudianteId,
+    intervencion,
+    evidenciaId
+  );
+}
+
+export async function registrarIntervencionConEvidenciaAsync(
+  input: RegistrarIntervencionConEvidenciaInput
+): Promise<RegistrarIntervencionConEvidenciaResult> {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "Solo disponible en el cliente." };
+  }
+
+  const estudianteId = input.evidencia.estudianteId?.trim();
+  if (!estudianteId) {
+    return { ok: false, error: "Estudiante no válido." };
+  }
+
+  const estudianteError = await assertEstudianteExisteAsync(estudianteId);
+  if (estudianteError) {
+    return { ok: false, error: estudianteError };
+  }
+
+  ensureSeedEspacios();
+
+  const intervencionId = crypto.randomUUID();
+  const evidenciaId = crypto.randomUUID();
+
+  const intervencion = await saveIntervencionAsync(
+    buildIntervencionInput(input, estudianteId, intervencionId)
+  );
+
+  if (!intervencion) {
+    return {
+      ok: false,
+      error: "No se pudo registrar la intervención institucional.",
+    };
+  }
+
+  return finalizarRegistroIntervencionConEvidencia(
+    input,
+    estudianteId,
+    intervencion,
+    evidenciaId
+  );
 }

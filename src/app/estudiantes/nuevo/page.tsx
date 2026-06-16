@@ -7,7 +7,7 @@ import {
 } from "@/components/estudiantes/EstudianteDatosBasicosForm";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
-import { saveEstudiante } from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,7 +22,7 @@ export default function NuevoEstudiantePage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  function handleSubmit(nextValues: EstudianteDatosBasicosValues) {
+  async function handleSubmit(nextValues: EstudianteDatosBasicosValues) {
     if (isSaving) return;
 
     const nombre = nextValues.nombre.trim();
@@ -41,8 +41,19 @@ export default function NuevoEstudiantePage() {
     setIsSaving(true);
     setError(null);
 
-    const estudiante = saveEstudiante({ nombre, curso });
-    router.push(`/estudiantes/${estudiante.id}`);
+    try {
+      const estudiante = await getEstudiantesRepositoryAsync().save({
+        nombre,
+        curso,
+      });
+    
+      router.push(`/estudiantes/${estudiante.id}`);
+    } catch (error) {
+      console.error("ERROR SUPABASE:", error);
+    
+      setError("No se pudo guardar el estudiante. Intenta nuevamente.");
+      setIsSaving(false);
+    }
   }
 
   return (

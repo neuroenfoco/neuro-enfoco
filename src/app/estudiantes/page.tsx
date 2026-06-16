@@ -4,11 +4,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { EliminarEstudianteDialog } from "@/components/estudiantes/EliminarEstudianteDialog";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
-import {
-  getEstudianteIniciales,
-  getEstudiantes,
-  type Estudiante,
-} from "@/lib/students-storage";
+import type { Estudiante } from "@/lib/repositories/estudiantes-repository";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
+import { getEstudianteIniciales } from "@/lib/students-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -31,15 +29,23 @@ export default function EstudiantesPage() {
   }, []);
 
   useEffect(() => {
-    function refreshStudents() {
-      setStudents(getEstudiantes());
+    let cancelled = false;
+
+    async function refreshStudents() {
+      try {
+        const list = await getEstudiantesRepositoryAsync().getAll();
+        if (!cancelled) setStudents(list);
+      } catch {
+        if (!cancelled) setStudents([]);
+      }
     }
 
-    refreshStudents();
+    void refreshStudents();
     window.addEventListener("focus", refreshStudents);
     window.addEventListener("storage", refreshStudents);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("focus", refreshStudents);
       window.removeEventListener("storage", refreshStudents);
     };
@@ -191,7 +197,10 @@ export default function EstudiantesPage() {
           onClose={() => setDeleteTarget(null)}
           onDeleted={() => {
             setDeleteTarget(null);
-            setStudents(getEstudiantes());
+            void getEstudiantesRepositoryAsync()
+              .getAll()
+              .then(setStudents)
+              .catch(() => setStudents([]));
             router.push("/estudiantes?eliminado=1");
           }}
         />

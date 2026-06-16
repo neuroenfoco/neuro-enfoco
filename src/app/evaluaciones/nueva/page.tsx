@@ -8,10 +8,8 @@ import {
   todayEvaluacionDateInput,
 } from "@/lib/evaluacion-integral/evaluacion-integral-fechas";
 import type { EvaluacionIntegralTipo } from "@/lib/evaluacion-integral/evaluacion-integral-types";
-import {
-  getEvaluacionIngresoCerradaByEstudianteId,
-  saveEvaluacionIntegral,
-} from "@/lib/evaluacion-integral/evaluacion-integral-storage";
+import { saveEvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-storage";
+import { tieneIngresoPIECompletadoAsync } from "@/lib/ingreso-pie";
 import { getEvaluacionVigente } from "@/lib/evaluacion-integral/evaluacion-integral-view";
 import { getEstudiantes } from "@/lib/students-storage";
 import Link from "next/link";
@@ -20,13 +18,6 @@ import { useEffect, useMemo, useState } from "react";
 
 const COPY = GLOSSARY.evaluacionCaptura;
 
-function defaultTipoForEstudiante(estudianteId: string): EvaluacionIntegralTipo {
-  if (getEvaluacionIngresoCerradaByEstudianteId(estudianteId)) {
-    return "reevaluacion";
-  }
-  return "ingreso";
-}
-
 export default function NuevaEvaluacionPage() {
   const router = useRouter();
   const [estudiantes, setEstudiantes] = useState(
@@ -34,6 +25,7 @@ export default function NuevaEvaluacionPage() {
   );
   const [estudianteId, setEstudianteId] = useState("");
   const [tipo, setTipo] = useState<EvaluacionIntegralTipo>("reevaluacion");
+  const [ingresoCompletado, setIngresoCompletado] = useState(false);
   const [fechaInicio, setFechaInicio] = useState(todayEvaluacionDateInput());
   const [fechaTermino, setFechaTermino] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +44,26 @@ export default function NuevaEvaluacionPage() {
     );
     if (preselected) {
       setEstudianteId(preselected);
-      setTipo(defaultTipoForEstudiante(preselected));
     }
   }, []);
 
   useEffect(() => {
-    if (!estudianteId) return;
-    setTipo(defaultTipoForEstudiante(estudianteId));
+    if (!estudianteId) {
+      setIngresoCompletado(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    void tieneIngresoPIECompletadoAsync(estudianteId).then((completado) => {
+      if (cancelled) return;
+      setIngresoCompletado(completado);
+      setTipo(completado ? "reevaluacion" : "ingreso");
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [estudianteId]);
 
   function handleSubmit(event: React.FormEvent) {
@@ -153,15 +158,15 @@ export default function NuevaEvaluacionPage() {
               className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
             >
               {EVALUACION_TIPOS_CAPTURA.map((option) => {
-                const ingresoCerrada =
+                const ingresoBloqueado =
                   estudianteId &&
                   option.id === "ingreso" &&
-                  Boolean(getEvaluacionIngresoCerradaByEstudianteId(estudianteId));
+                  ingresoCompletado;
                 return (
                   <option
                     key={option.id}
                     value={option.id}
-                    disabled={Boolean(ingresoCerrada)}
+                    disabled={Boolean(ingresoBloqueado)}
                   >
                     {option.label}
                   </option>

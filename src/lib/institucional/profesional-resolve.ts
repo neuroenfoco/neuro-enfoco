@@ -13,9 +13,9 @@ import {
  */
 const LEGACY_CATALOGO_PROFESIONAL_NOMBRES: Record<string, string> = {
   "profesional-local": "Equipo escolar",
-  "educadora-diferencial": "Educadora diferencial",
-  "psicologa-escolar": "Psicóloga escolar",
-  fonoaudiologa: "Fonoaudióloga",
+  "educadora-diferencial": "Educador/a diferencial",
+  "psicologa-escolar": "Psicólogo/a escolar",
+  fonoaudiologa: "Fonoaudiólogo/a",
   "terapeuta-ocupacional": "Terapeuta ocupacional",
 };
 

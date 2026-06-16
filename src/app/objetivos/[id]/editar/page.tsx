@@ -16,10 +16,25 @@ import {
   updateObjetivoPIE,
 } from "@/lib/pie-objectives-storage";
 import { getVinculosByObjetivoId, syncVinculosObjetivo } from "@/lib/evaluacion-integral/vinculo-conclusion-objetivo-storage";
-import { getEstudiantes } from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
+import type { Estudiante } from "@/lib/students-storage";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+async function loadEstudiantesIncludingId(
+  estudianteId?: string
+): Promise<Estudiante[]> {
+  const repo = getEstudiantesRepositoryAsync();
+  const list = await repo.getAll();
+  const trimmed = estudianteId?.trim();
+  if (!trimmed || list.some((item) => item.id === trimmed)) {
+    return list;
+  }
+
+  const selected = await repo.getById(trimmed);
+  return selected ? [...list, selected] : list;
+}
 
 export default function EditarObjetivoPage() {
   const router = useRouter();
@@ -27,34 +42,49 @@ export default function EditarObjetivoPage() {
   const objetivoId = params.id;
   const copy = GLOSSARY.objetivo.planificacion;
 
-  const [estudiantes, setEstudiantes] = useState(
-    () => (typeof window !== "undefined" ? getEstudiantes() : [])
-  );
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [initialValues, setInitialValues] =
     useState<ObjetivoPIEPlanificacionInitialValues | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    setEstudiantes(getEstudiantes());
+    let cancelled = false;
 
-    const objetivo = getObjetivoPIEById(objetivoId);
-    if (!objetivo) {
-      setNotFound(true);
-      return;
+    async function load() {
+      const objetivo = getObjetivoPIEById(objetivoId);
+      if (!objetivo) {
+        if (!cancelled) setNotFound(true);
+        return;
+      }
+
+      try {
+        const list = await loadEstudiantesIncludingId(objetivo.estudianteId);
+        if (cancelled) return;
+
+        setEstudiantes(list);
+
+        const vinculos = getVinculosByObjetivoId(objetivoId);
+        setInitialValues({
+          ...buildPlanificacionValuesFromObjetivo({
+            ...objetivo,
+            fechaLineaBase: fechaLineaBaseToInputValue(objetivo.fechaLineaBase),
+          }),
+          conclusionEvaluativaIds: vinculos.map(
+            (item) => item.conclusionEvaluativaId
+          ),
+          evaluacionOrigenId: vinculos[0]?.evaluacionIntegralId ?? "",
+        });
+      } catch {
+        if (!cancelled) setEstudiantes([]);
+      }
     }
 
-    const vinculos = getVinculosByObjetivoId(objetivoId);
-    setInitialValues({
-      ...buildPlanificacionValuesFromObjetivo({
-        ...objetivo,
-        fechaLineaBase: fechaLineaBaseToInputValue(objetivo.fechaLineaBase),
-      }),
-      conclusionEvaluativaIds: vinculos.map(
-        (item) => item.conclusionEvaluativaId
-      ),
-      evaluacionOrigenId: vinculos[0]?.evaluacionIntegralId ?? "",
-    });
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [objetivoId]);
 
   function handleSubmit(input: ObjetivoPIEPlanificacionSubmitInput) {

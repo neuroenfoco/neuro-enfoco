@@ -1,9 +1,7 @@
 import type { CatalogKind } from "@/lib/catalogos/catalog-types";
 import { CATALOGO_OTRO_ID } from "@/lib/catalogos/catalog-types";
-import { cerrarEvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-consolidacion";
-import { saveHallazgoEvaluativo } from "@/lib/evaluacion-integral/hallazgo-evaluativo-storage";
-import { saveEvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-storage";
-import type { EvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-types";
+import { getEvaluacionIngresoCerradaByEstudianteId } from "@/lib/evaluacion-integral/evaluacion-integral-storage";
+import { estaEnPerfilBase } from "@/lib/hallazgo-estado-conocimiento";
 import {
   type EstadoPIE,
   type MarcoInstitucionalPIE,
@@ -11,14 +9,17 @@ import {
   validateFechasMarco,
 } from "@/lib/marco-institucional-pie-storage";
 import {
+  createHallazgoPerfil,
+  findHallazgoByCatalogoId,
+  findHallazgoByNombre,
+  incorporarHallazgoAlPerfilBase,
   normalizeHallazgoNombre,
   type HallazgoTipo,
 } from "@/lib/perfil-hallazgos-storage";
-import {
-  getEstudianteById,
-} from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
+import { getEstudianteById } from "@/lib/students-storage";
 
-/** Marca evaluaciones originadas en el wizard de Ingreso PIE (A3). */
+/** Marca evaluaciones originadas en el wizard de Ingreso PIE (legacy A3). */
 export const INGRESO_PIE_EVALUACION_ORIGEN = "ingreso_pie";
 
 export type HallazgoIngresoBorrador = {
@@ -50,14 +51,39 @@ export type CompletarIngresoPIEResult =
       ok: true;
       estudianteId: string;
       marco: MarcoInstitucionalPIE;
-      evaluacionIntegralId: string;
-      hallazgosEvaluativosCreados: number;
-      /** Hallazgos consolidados en Perfil Base tras el cierre. */
+      /** Hallazgos incorporados al Perfil Base. */
       hallazgosConsolidados: number;
       /** Alias retrocompatible con consumidores previos. */
       hallazgosCreados: number;
     }
   | { ok: false; error: string };
+
+function ingresoPIECompletadoDesdeEstudiante(
+  estudiante: { ingresoPieCompletado?: boolean } | null | undefined,
+  estudianteId: string
+): boolean {
+  if (estudiante?.ingresoPieCompletado) return true;
+  return getEvaluacionIngresoCerradaByEstudianteId(estudianteId) !== null;
+}
+
+/** Ingreso PIE completado vía flag o evaluación de ingreso cerrada (legacy). */
+export function tieneIngresoPIECompletado(estudianteId: string): boolean {
+  return ingresoPIECompletadoDesdeEstudiante(
+    getEstudianteById(estudianteId),
+    estudianteId
+  );
+}
+
+/** Misma regla que `tieneIngresoPIECompletado`, vía repositorio async activo. */
+export async function tieneIngresoPIECompletadoAsync(
+  estudianteId: string
+): Promise<boolean> {
+  const trimmed = estudianteId.trim();
+  if (!trimmed) return false;
+
+  const estudiante = await getEstudiantesRepositoryAsync().getById(trimmed);
+  return ingresoPIECompletadoDesdeEstudiante(estudiante, trimmed);
+}
 
 function deduplicarBorradores(
   borradores: HallazgoIngresoBorrador[]
@@ -90,62 +116,61 @@ function deduplicarBorradores(
   return result;
 }
 
-function crearEvaluacionIngresoDesdeMarco(
+function consolidarHallazgosIngresoPIE(
   estudianteId: string,
-  marco: MarcoInstitucionalPIE,
-  inputMarco: IngresoPieMarcoInput
-): EvaluacionIntegral | null {
-  return saveEvaluacionIntegral({
-    estudianteId,
-    tipo: "ingreso",
-    fechaInicio: marco.fechaIngresoPIE,
-    ingresoPieOrigen: INGRESO_PIE_EVALUACION_ORIGEN,
-    tipoNEE: inputMarco.tipoNEE,
-    diagnosticoNEEResumen: inputMarco.diagnosticoPrincipal,
-    fechaProximaReevaluacion: inputMarco.fechaProximaReevaluacionIntegral,
-    referenciaEvaluacionPrevia: inputMarco.referenciaEvaluacionPrevia,
-    observacionesEvaluacion: inputMarco.observacionesInstitucionales,
-  });
-}
-
-function persistirHallazgosEvaluativosDesdeIngreso(
-  evaluacionIntegralId: string,
-  estudianteId: string,
-  borradores: HallazgoIngresoBorrador[]
-): { creados: number; error?: string } {
-  let creados = 0;
+  borradores: HallazgoIngresoBorrador[],
+  perfilBaseDesde: string
+): { consolidados: number } {
+  let consolidados = 0;
 
   for (const borrador of borradores) {
-    const hallazgo = saveHallazgoEvaluativo({
-      evaluacionIntegralId,
+    const existentePorCatalogo = borrador.catalogoId
+      ? findHallazgoByCatalogoId(
+          estudianteId,
+          borrador.tipo,
+          borrador.catalogoId
+        )
+      : null;
+
+    const existente =
+      existentePorCatalogo ??
+      findHallazgoByNombre(estudianteId, borrador.tipo, borrador.nombre);
+
+    if (existente) {
+      if (!estaEnPerfilBase(existente)) {
+        incorporarHallazgoAlPerfilBase({
+          hallazgoId: existente.id,
+          perfilBaseDesde,
+        });
+      }
+      consolidados += 1;
+      continue;
+    }
+
+    const creado = createHallazgoPerfil({
       estudianteId,
       tipo: borrador.tipo,
       nombre: borrador.nombre,
+      origen: "ingreso_pie",
+      perfilBaseDesde,
       catalogoKind: borrador.catalogoKind,
       catalogoId: borrador.catalogoId,
       formulacionOriginal: borrador.formulacionOriginal,
     });
 
-    if (!hallazgo) {
-      return {
-        creados,
-        error: `No se pudo registrar el hallazgo evaluativo «${borrador.nombre}».`,
-      };
-    }
-
-    creados += 1;
+    if (creado) consolidados += 1;
   }
 
-  return { creados };
+  return { consolidados };
 }
 
 /**
- * Completa el ingreso PIE creando EvaluacionIntegral, HallazgoEvaluativo y
- * consolidando en Perfil Base vía cerrarEvaluacionIntegral() (pipeline único).
+ * Completa el ingreso PIE guardando marco institucional, hallazgos en Perfil Base
+ * y marcando el estudiante. No crea EvaluacionIntegral.
  */
-export function completarIngresoPIE(
+export async function completarIngresoPIE(
   input: CompletarIngresoPIEInput
-): CompletarIngresoPIEResult {
+): Promise<CompletarIngresoPIEResult> {
   if (typeof window === "undefined") {
     return { ok: false, error: "Solo disponible en el cliente." };
   }
@@ -156,10 +181,19 @@ export function completarIngresoPIE(
     return { ok: false, error: "Debes seleccionar un estudiante." };
   }
 
-  const estudiante = getEstudianteById(estudianteId);
+  const estudiante =
+    await getEstudiantesRepositoryAsync().getById(estudianteId);
 
   if (!estudiante) {
     return { ok: false, error: "El estudiante seleccionado no existe." };
+  }
+
+  if (await tieneIngresoPIECompletadoAsync(estudiante.id)) {
+    return {
+      ok: false,
+      error:
+        "El Ingreso PIE ya fue completado para este estudiante. Verifique el marco institucional.",
+    };
   }
 
   const fechaError = validateFechasMarco(input.marco);
@@ -173,49 +207,29 @@ export function completarIngresoPIE(
     estadoPIE: input.marco.estadoPIE ?? "ingreso",
   });
 
-  const evaluacion = crearEvaluacionIngresoDesdeMarco(
+  const borradores = deduplicarBorradores(input.hallazgos);
+  const { consolidados } = consolidarHallazgosIngresoPIE(
     estudiante.id,
-    marco,
-    input.marco
+    borradores,
+    marco.fechaIngresoPIE
   );
 
-  if (!evaluacion) {
+  const marcado = await getEstudiantesRepositoryAsync().marcarIngresoPieCompletado(
+    estudiante.id,
+    marco.fechaIngresoPIE
+  );
+  if (!marcado) {
     return {
       ok: false,
-      error:
-        "No se pudo crear la evaluación integral de ingreso. Verifique fechas y que no exista otra evaluación de ingreso cerrada.",
+      error: "No se pudo marcar el ingreso PIE como completado.",
     };
   }
-
-  const borradores = deduplicarBorradores(input.hallazgos);
-  const hallazgosPersistidos = persistirHallazgosEvaluativosDesdeIngreso(
-    evaluacion.id,
-    estudiante.id,
-    borradores
-  );
-
-  if (hallazgosPersistidos.error) {
-    return { ok: false, error: hallazgosPersistidos.error };
-  }
-
-  const cierre = cerrarEvaluacionIntegral(evaluacion.id, marco.fechaIngresoPIE);
-
-  if (!cierre.ok) {
-    return { ok: false, error: cierre.error };
-  }
-
-  const hallazgosConsolidados =
-    cierre.consolidacion.creadosEnPerfil +
-    cierre.consolidacion.vinculadosExistentes +
-    cierre.consolidacion.yaConsolidados;
 
   return {
     ok: true,
     estudianteId: estudiante.id,
     marco,
-    evaluacionIntegralId: evaluacion.id,
-    hallazgosEvaluativosCreados: hallazgosPersistidos.creados,
-    hallazgosConsolidados,
-    hallazgosCreados: hallazgosConsolidados,
+    hallazgosConsolidados: consolidados,
+    hallazgosCreados: consolidados,
   };
 }

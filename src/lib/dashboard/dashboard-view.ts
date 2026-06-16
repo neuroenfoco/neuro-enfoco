@@ -3,11 +3,9 @@ import {
   getApoyoEfectividadView,
 } from "@/lib/apoyos/apoyo-efectividad-view";
 import { getApoyoIntervencionIndicadores } from "@/lib/apoyos/apoyo-intervencion-view";
-import { readApoyosPIE } from "@/lib/apoyos/apoyos-persistence";
 import { getApoyosImplementadosIndicadores } from "@/lib/apoyos/apoyos-view";
 import { getEstudianteBarrerasApoyosResumen } from "@/lib/apoyos/barreras-apoyos-view";
 import { GLOSSARY } from "@/lib/copy/glossary";
-import { readEvaluacionesIntegrales } from "@/lib/evaluacion-integral/evaluacion-integral-persistence";
 import type { EvaluacionIntegral } from "@/lib/evaluacion-integral/evaluacion-integral-types";
 import {
   getEvaluacionIntegralEstadoLabel,
@@ -16,23 +14,31 @@ import {
 } from "@/lib/evaluacion-integral/evaluacion-integral-view";
 import { parseFechaOrden } from "@/lib/estudiante/estudiante-timeline";
 import { getTipoIntervencionNombre } from "@/lib/intervenciones-catalog";
-import { getIntervenciones } from "@/lib/intervenciones-storage";
 import { formatMarcoFechaDisplay } from "@/lib/marco-institucional-pie-storage";
 import {
   buildObjetivoSeguimiento,
   type ObjetivoSeguimiento,
 } from "@/lib/objetivos/objetivo-seguimiento";
-import { readPACIs } from "@/lib/paci/paci-persistence";
 import type { PACI } from "@/lib/paci/paci-types";
-import { getObjetivosPIE, type ObjetivoPIE } from "@/lib/pie-objectives-storage";
+import type { ObjetivoPIE } from "@/lib/repositories/objetivos-repository";
+import type { Intervencion } from "@/lib/repositories/intervenciones-repository";
+import type { Estudiante } from "@/lib/repositories/estudiantes-repository";
+import type { Sesion } from "@/lib/repositories/sesiones-repository";
+import {
+  getApoyosRepository,
+  getEstudiantesRepository,
+  getEvaluacionesRepository,
+  getIntervencionesRepository,
+  getObjetivosRepository,
+  getPACIRepository,
+  getSesionesRepository,
+} from "@/lib/repositories/repository-factory";
 import {
   diasDesdeInstitucional,
   isWithinDays,
   parseFechaOrdenInstitucional,
   startOfTodayMs,
 } from "@/lib/shared/fecha-institucional";
-import { getSesiones } from "@/lib/sessions-storage";
-import { getEstudiantes } from "@/lib/students-storage";
 
 export type DashboardIndicadoresView = {
   estudiantesActivos: number;
@@ -118,12 +124,12 @@ function buildSeguimientoPorObjetivo(
 }
 
 function buildIndicadores(
-  estudiantes: ReturnType<typeof getEstudiantes>,
+  estudiantes: Estudiante[],
   evaluaciones: EvaluacionIntegral[],
-  objetivos: ReturnType<typeof getObjetivosPIE>,
+  objetivos: ObjetivoPIE[],
   pacis: PACI[],
-  intervenciones: ReturnType<typeof getIntervenciones>,
-  sesiones: ReturnType<typeof getSesiones>,
+  intervenciones: Intervencion[],
+  sesiones: Sesion[],
   seguimientoPorObjetivo: Map<string, ObjetivoSeguimiento>,
   nowMs: number
 ): DashboardIndicadoresView {
@@ -184,9 +190,7 @@ function getEstudianteNombreFromMap(
   return nombresPorId.get(estudianteId) ?? "Estudiante";
 }
 
-function buildBarrerasApoyos(
-  estudiantes: ReturnType<typeof getEstudiantes>
-): DashboardBarrerasApoyosView {
+function buildBarrerasApoyos(estudiantes: Estudiante[]): DashboardBarrerasApoyosView {
   let barrerasIdentificadas = 0;
   let apoyosSugeridos = 0;
   let objetivosConSustentoEvaluativo = 0;
@@ -209,9 +213,9 @@ function buildBarrerasApoyos(
 }
 
 function buildAlertas(
-  estudiantes: ReturnType<typeof getEstudiantes>,
+  estudiantes: Estudiante[],
   evaluaciones: EvaluacionIntegral[],
-  objetivos: ReturnType<typeof getObjetivosPIE>,
+  objetivos: ObjetivoPIE[],
   pacis: PACI[],
   nombresPorId: Map<string, string>,
   seguimientoPorObjetivo: Map<string, ObjetivoSeguimiento>
@@ -278,7 +282,7 @@ function buildAlertas(
 
   const todayMs = startOfTodayMs();
 
-  for (const apoyo of readApoyosPIE()) {
+  for (const apoyo of getApoyosRepository().getAll()) {
     if (apoyo.estado !== "activo") continue;
 
     const efectividad = getApoyoEfectividadView(apoyo.id);
@@ -317,7 +321,7 @@ function buildAlertas(
 
 function buildActividadReciente(
   evaluaciones: EvaluacionIntegral[],
-  intervenciones: ReturnType<typeof getIntervenciones>,
+  intervenciones: Intervencion[],
   pacis: PACI[],
   nombresPorId: Map<string, string>
 ): DashboardActividadRecienteItem[] {
@@ -401,12 +405,12 @@ function buildActividadReciente(
 }
 
 export function getDashboardView(): DashboardView {
-  const estudiantes = getEstudiantes();
-  const evaluaciones = readEvaluacionesIntegrales();
-  const objetivos = getObjetivosPIE();
-  const pacis = readPACIs();
-  const intervenciones = getIntervenciones();
-  const sesiones = getSesiones();
+  const estudiantes = getEstudiantesRepository().getAll();
+  const evaluaciones = getEvaluacionesRepository().getAll();
+  const objetivos = getObjetivosRepository().getAll();
+  const pacis = getPACIRepository().getAll();
+  const intervenciones = getIntervencionesRepository().getAll();
+  const sesiones = getSesionesRepository().getAll();
   const nowMs = startOfTodayMs();
   const nombresPorId = new Map(
     estudiantes.map((item) => [item.id, item.nombre] as const)

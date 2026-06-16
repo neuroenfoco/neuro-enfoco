@@ -1,3 +1,4 @@
+/** Tipo institucional del apoyo (ApoyoPIE). */
 export type ApoyoPIETipo =
   | "adaptacion_acceso"
   | "adaptacion_curricular"
@@ -9,6 +10,11 @@ export type ApoyoPIETipo =
 
 export type ApoyoPIEEstado = "activo" | "suspendido" | "finalizado";
 
+/**
+ * Apoyo institucional implementado (entidad canónica ApoyoPIE).
+ * Responde «¿Qué apoyo estamos implementando?» — distinto del uso documentado
+ * en intervenciones (`Sesion.apoyosUtilizados`).
+ */
 export type ApoyoPIE = {
   id: string;
   estudianteId: string;
@@ -16,6 +22,8 @@ export type ApoyoPIE = {
   nombre: string;
   tipo: ApoyoPIETipo;
   descripcion?: string;
+  responsableProfesionalId?: string;
+  responsableNombreSnapshot?: string;
   responsable?: string;
   frecuencia?: string;
   estado: ApoyoPIEEstado;
@@ -29,6 +37,7 @@ export type CreateApoyoPIEInput = {
   nombre: string;
   tipo: ApoyoPIETipo;
   descripcion?: string;
+  responsableProfesionalId?: string;
   responsable?: string;
   frecuencia?: string;
   estado?: ApoyoPIEEstado;
@@ -38,6 +47,7 @@ export type UpdateApoyoPIEInput = {
   nombre?: string;
   tipo?: ApoyoPIETipo;
   descripcion?: string;
+  responsableProfesionalId?: string;
   responsable?: string;
   frecuencia?: string;
   estado?: ApoyoPIEEstado;

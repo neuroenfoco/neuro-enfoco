@@ -23,18 +23,18 @@ export type RolProfesionalDef = {
 };
 
 export const CATALOGO_ROLES_PROFESIONAL: readonly RolProfesionalDef[] = [
-  { id: "educadora_diferencial", nombre: "Educadora Diferencial", orden: 10 },
-  { id: "psicologa", nombre: "Psicóloga", orden: 20 },
-  { id: "fonoaudiologa", nombre: "Fonoaudióloga", orden: 30 },
-  { id: "terapeuta_ocupacional", nombre: "Terapeuta Ocupacional", orden: 40 },
-  { id: "psicopedagoga", nombre: "Psicopedagoga", orden: 50 },
-  { id: "docente_aula", nombre: "Docente de Aula", orden: 60 },
-  { id: "coordinador_pie", nombre: "Coordinador PIE", orden: 70 },
-  { id: "trabajadora_social", nombre: "Trabajadora Social", orden: 80 },
+  { id: "educadora_diferencial", nombre: "Educador/a diferencial", orden: 10 },
+  { id: "psicologa", nombre: "Psicólogo/a", orden: 20 },
+  { id: "fonoaudiologa", nombre: "Fonoaudiólogo/a", orden: 30 },
+  { id: "terapeuta_ocupacional", nombre: "Terapeuta ocupacional", orden: 40 },
+  { id: "psicopedagoga", nombre: "Psicopedagogo/a", orden: 50 },
+  { id: "docente_aula", nombre: "Docente de aula", orden: 60 },
+  { id: "coordinador_pie", nombre: "Coordinador/a PIE", orden: 70 },
+  { id: "trabajadora_social", nombre: "Trabajador/a social", orden: 80 },
   { id: "orientador", nombre: "Orientador/a", orden: 90 },
   {
     id: "encargado_convivencia",
-    nombre: "Encargado/a de Convivencia",
+    nombre: "Encargado/a de convivencia",
     orden: 100,
   },
   { id: "otro", nombre: "Otro", orden: 999 },

@@ -3,6 +3,9 @@ import {
   isRolProfesionalId,
   type RolProfesionalId,
 } from "@/lib/institucional/roles-profesional-catalog";
+import { getIntervenciones } from "@/lib/intervenciones-storage";
+import { getSesiones } from "@/lib/sessions-storage";
+import { readApoyosPIE } from "@/lib/apoyos/apoyos-persistence";
 
 /**
  * ID histórico usado antes de la entidad Profesional.
@@ -218,4 +221,117 @@ export function updateProfesional(
 
 export function getProfesionalRolNombre(profesional: Profesional): string {
   return getRolProfesionalById(profesional.rolPrincipalId)?.nombre ?? "";
+}
+
+const PARTICIPACIONES_EQUIPO_STORAGE_KEY =
+  "neuro-enfoco-participaciones-profesional-estudiante";
+const PARTICIPACIONES_EVALUACION_STORAGE_KEY =
+  "neuro-enfoco-participaciones-evaluacion-integral";
+
+function readJsonArrayFromStorage(key: string): unknown[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return [];
+
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function storageArrayReferencesProfesionalId(
+  items: unknown[],
+  profesionalId: string
+): boolean {
+  return items.some(
+    (item) =>
+      !!item &&
+      typeof item === "object" &&
+      (item as Record<string, unknown>).profesionalId === profesionalId
+  );
+}
+
+export function profesionalTieneReferencias(profesionalId: string): boolean {
+  const id = profesionalId.trim();
+  if (!id) return false;
+
+  if (getIntervenciones().some((item) => item.profesionalId === id)) {
+    return true;
+  }
+
+  if (
+    getSesiones().some(
+      (item) => item.profesionalId !== undefined && item.profesionalId === id
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    storageArrayReferencesProfesionalId(
+      readJsonArrayFromStorage(PARTICIPACIONES_EQUIPO_STORAGE_KEY),
+      id
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    storageArrayReferencesProfesionalId(
+      readJsonArrayFromStorage(PARTICIPACIONES_EVALUACION_STORAGE_KEY),
+      id
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    readApoyosPIE().some((item) => item.responsableProfesionalId === id)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export type DeleteProfesionalResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export function deleteProfesional(id: string): DeleteProfesionalResult {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "Solo disponible en el cliente." };
+  }
+
+  const trimmed = id.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Profesional no encontrado." };
+  }
+
+  if (trimmed === DEFAULT_PROFESIONAL_ID) {
+    return {
+      ok: false,
+      error:
+        "No es posible eliminar el registro de transición del establecimiento.",
+    };
+  }
+
+  const existing = readProfesionales();
+  if (!existing.some((item) => item.id === trimmed)) {
+    return { ok: false, error: "Profesional no encontrado." };
+  }
+
+  if (profesionalTieneReferencias(trimmed)) {
+    return {
+      ok: false,
+      error:
+        "No es posible eliminar este profesional porque está siendo utilizado en registros existentes.",
+    };
+  }
+
+  writeProfesionales(existing.filter((item) => item.id !== trimmed));
+  return { ok: true };
 }

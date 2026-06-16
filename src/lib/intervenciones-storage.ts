@@ -40,6 +40,10 @@ import {
 } from "@/lib/sessions-storage";
 import { resolveProfesionalIdForPersist } from "@/lib/institucional/profesional-resolve";
 import { DEFAULT_PROFESIONAL_ID } from "@/lib/institucional/profesionales-storage";
+import {
+  assertEstudianteExiste,
+  assertEstudianteExisteAsync,
+} from "@/lib/evaluacion-integral/evaluacion-integral-validacion";
 import { getEstudianteById } from "@/lib/students-storage";
 
 export type { TipoIntervencionId };
@@ -326,7 +330,7 @@ function normalizeObjetivosRelacionados(objetivoIds: string[]): string[] {
   return [...new Set(objetivoIds.map((id) => id.trim()).filter(Boolean))];
 }
 
-export function saveIntervencion(input: {
+export type SaveIntervencionInput = {
   id?: string;
   estudianteId: string;
   profesionalId?: string;
@@ -338,8 +342,9 @@ export function saveIntervencion(input: {
   objetivosRelacionados?: string[];
   apoyosUtilizados?: string[];
   observaciones?: string;
-}): Intervencion | null {
-  if (!getEstudianteById(input.estudianteId)) return null;
+};
+
+function persistIntervencion(input: SaveIntervencionInput): Intervencion | null {
   if (!isTipoIntervencionId(input.tipoIntervencion)) return null;
 
   const espacioId = normalizeEspacioIdForIntervencion(input.espacioId);
@@ -365,6 +370,24 @@ export function saveIntervencion(input: {
 
   writeIntervenciones([intervencion, ...readIntervenciones()]);
   return intervencion;
+}
+
+export function saveIntervencion(
+  input: SaveIntervencionInput
+): Intervencion | null {
+  const estudianteError = assertEstudianteExiste(input.estudianteId);
+  if (estudianteError) return null;
+
+  return persistIntervencion(input);
+}
+
+export async function saveIntervencionAsync(
+  input: SaveIntervencionInput
+): Promise<Intervencion | null> {
+  const estudianteError = await assertEstudianteExisteAsync(input.estudianteId);
+  if (estudianteError) return null;
+
+  return persistIntervencion(input);
 }
 
 export function updateIntervencion(

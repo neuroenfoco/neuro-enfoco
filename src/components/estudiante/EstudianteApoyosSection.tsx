@@ -66,7 +66,7 @@ export function EstudianteApoyosSection({
       nombre: values.nombre,
       tipo: values.tipo,
       descripcion: values.descripcion || undefined,
-      responsable: values.responsable || undefined,
+      responsableProfesionalId: values.responsableProfesionalId || undefined,
       frecuencia: values.frecuencia || undefined,
       estado: values.estado,
     });

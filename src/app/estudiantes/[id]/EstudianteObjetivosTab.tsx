@@ -1,6 +1,7 @@
 "use client";
 
 import { EstudianteObjetivosSeguimientoSection } from "@/components/estudiante/EstudianteObjetivosSeguimientoSection";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   getApoyosConsolidadosPorObjetivo,
@@ -30,6 +31,7 @@ export function EstudianteObjetivosTab({
   estudianteId,
   estudiantePrimerNombre,
 }: EstudianteObjetivosTabProps) {
+  const guidance = GLOSSARY.institutionalGuidance.objetivos;
   const [ficha, setFicha] = useState<EstudianteObjetivosFicha | null>(null);
 
   useEffect(() => {
@@ -92,6 +94,22 @@ export function EstudianteObjetivosTab({
           />
         </div>
       </section>
+
+      <InstitutionalInfoCard
+        variant="info"
+        title={guidance.info.title}
+        body={guidance.info.body}
+        detail={guidance.info.detail}
+      />
+
+      {ficha.totalObjetivos === 0 ? (
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={guidance.recomendacionSinObjetivos.body}
+          ctaLabel={guidance.recomendacionSinObjetivos.cta}
+          ctaHref={`/objetivos/nuevo?estudianteId=${estudianteId}`}
+        />
+      ) : null}
 
       {ficha.insightsConsolidados.length > 0 && (
         <section className="rounded-2xl border border-teal-200/60 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
@@ -216,7 +234,7 @@ function ObjetivoSeguimientoCard({ item }: { item: ObjetivoPIEFichaItem }) {
       <div className="grid gap-6 border-t border-slate-100 p-6 sm:p-8 lg:grid-cols-2">
         <div>
           <h4 className="text-sm font-semibold text-slate-900">
-            Apoyos de participación
+            {GLOSSARY.apoyosConsolidados.titulo}
           </h4>
           {apoyosResumen ? (
             <>

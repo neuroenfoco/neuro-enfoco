@@ -8,6 +8,7 @@ import {
   EMPTY_QUIEN_ES_MESSAGE,
   generateQuienEsResumenDesdeHallazgos,
   getHallazgosResumenPorTipo,
+  getInteresesConsolidadosResumen,
   getTopFortalezasConfirmadas,
   type HallazgoResumenItem,
 } from "@/lib/hallazgos-resumen-ficha";
@@ -15,11 +16,11 @@ import {
   getApoyosUtilizadosAgregadosPorEstudiante,
   type ApoyoUtilizadoAgregado,
 } from "@/lib/apoyos-utilizados-estudiante";
-import { hasSesionesForEstudiante } from "@/lib/sessions-storage";
 import {
   formatHallazgoConfirmaciones,
   getHallazgoOrigenLabel,
   getHallazgosByEstudianteId,
+  getHallazgosConsolidadosPerfilBase,
   type HallazgoPerfil,
   type HallazgoTipo,
 } from "@/lib/perfil-hallazgos-storage";
@@ -30,6 +31,7 @@ import { EstudianteApoyosParticipacionTab } from "@/app/estudiantes/[id]/Estudia
 import { EstudianteAprendizajesTab } from "@/app/estudiantes/[id]/EstudianteAprendizajesTab";
 import { EstudiantePerfilEvolutivoTab } from "@/app/estudiantes/[id]/EstudiantePerfilEvolutivoTab";
 import { EstudianteAccionesSugeridas } from "@/components/estudiante/EstudianteAccionesSugeridas";
+import { EstudianteProgresoInstitucionalMapa } from "@/components/estudiante/EstudianteProgresoInstitucionalMapa";
 import { EstudianteApoyosSection } from "@/components/estudiante/EstudianteApoyosSection";
 import { EstudianteBarrerasApoyosSection } from "@/components/estudiante/EstudianteBarrerasApoyosSection";
 import { EstudianteObjetivosSeguimientoSection } from "@/components/estudiante/EstudianteObjetivosSeguimientoSection";
@@ -44,10 +46,10 @@ import { EstudianteEvaluacionIntegralTab } from "@/app/estudiantes/[id]/Estudian
 import { EstudiantePACITab } from "@/app/estudiantes/[id]/EstudiantePACITab";
 import { PACIVigenteResumenCard } from "@/components/paci/PACIVigenteResumenCard";
 import {
-  getEstudianteById,
   getEstudiantePrimerNombre,
   type Estudiante,
 } from "@/lib/students-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
 import { getPACIVigenteView } from "@/lib/paci/paci-view";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -96,7 +98,6 @@ export default function EstudianteFichaPage() {
   const estudianteId = params.id;
   const [estudiante, setEstudiante] = useState<Estudiante | null>(null);
   const [isStorageReady, setIsStorageReady] = useState(false);
-  const [hasSessions, setHasSessions] = useState(false);
   const [topFortalezas, setTopFortalezas] = useState<HallazgoResumenItem[]>([]);
   const [observedInterests, setObservedInterests] = useState<HallazgoResumenItem[]>(
     []
@@ -116,6 +117,9 @@ export default function EstudianteFichaPage() {
   const [hasCondicionesData, setHasCondicionesData] = useState(false);
   const [whoIsText, setWhoIsText] = useState<string | null>(null);
   const [hallazgosPerfil, setHallazgosPerfil] = useState<HallazgoPerfil[]>([]);
+  const [interesesConsolidadosPerfil, setInteresesConsolidadosPerfil] = useState<
+    HallazgoPerfil[]
+  >([]);
   const [activeTab, setActiveTab] = useState<ProfileTabId>("resumen");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -128,18 +132,36 @@ export default function EstudianteFichaPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const loaded = getEstudianteById(estudianteId);
-    setEstudiante(loaded);
-    setIsStorageReady(true);
-    if (!loaded) return;
+    let cancelled = false;
 
-    const studentId = loaded.id;
-    const primerNombre = getEstudiantePrimerNombre(loaded.nombre);
+    async function loadEstudiante() {
+      try {
+        const loaded = await getEstudiantesRepositoryAsync().getById(estudianteId);
+        if (cancelled) return;
+        setEstudiante(loaded);
+      } catch {
+        if (!cancelled) setEstudiante(null);
+      } finally {
+        if (!cancelled) setIsStorageReady(true);
+      }
+    }
+
+    void loadEstudiante();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [estudianteId]);
+
+  useEffect(() => {
+    if (!estudiante) return;
+
+    const studentId = estudiante.id;
+    const primerNombre = getEstudiantePrimerNombre(estudiante.nombre);
 
     function refreshFromStorage() {
-      setHasSessions(hasSesionesForEstudiante(studentId));
       setTopFortalezas(getTopFortalezasConfirmadas(studentId));
-      const interests = getHallazgosResumenPorTipo(studentId, "interes");
+      const interests = getInteresesConsolidadosResumen(studentId);
       const contexts = getHallazgosResumenPorTipo(studentId, "contexto_exito");
       setObservedInterests(interests);
       setObservedSuccessContexts(contexts);
@@ -155,6 +177,9 @@ export default function EstudianteFichaPage() {
         generateQuienEsResumenDesdeHallazgos(studentId, primerNombre)
       );
       setHallazgosPerfil(getHallazgosByEstudianteId(studentId));
+      setInteresesConsolidadosPerfil(
+        getHallazgosConsolidadosPerfilBase(studentId, "interes")
+      );
     }
 
     refreshFromStorage();
@@ -165,7 +190,7 @@ export default function EstudianteFichaPage() {
       window.removeEventListener("focus", refreshFromStorage);
       window.removeEventListener("storage", refreshFromStorage);
     };
-  }, [estudianteId]);
+  }, [estudiante]);
 
   if (!isStorageReady) {
     return (
@@ -308,6 +333,11 @@ export default function EstudianteFichaPage() {
               onIrIntervenciones={() => setActiveTab("sesiones")}
             />
 
+            <EstudianteProgresoInstitucionalMapa
+              estudianteId={estudianteId}
+              onIrTab={(tabId) => setActiveTab(tabId as ProfileTabId)}
+            />
+
             <EstudianteObjetivosSeguimientoSection
               estudianteId={estudianteId}
               onIrIntervenciones={() => setActiveTab("sesiones")}
@@ -349,9 +379,7 @@ export default function EstudianteFichaPage() {
                 {GLOSSARY.estudiante.quienEsTitulo(estudiantePrimerNombre)}
               </h2>
               <p className="mt-5 max-w-3xl whitespace-pre-line text-lg leading-relaxed text-slate-700">
-                {!hasSessions || !whoIsText
-                  ? EMPTY_QUIEN_ES_MESSAGE
-                  : whoIsText}
+                {!whoIsText ? EMPTY_QUIEN_ES_MESSAGE : whoIsText}
               </p>
               <p className="mt-6 text-sm text-slate-500">
                 {GLOSSARY.estudiante.quienEsNota}
@@ -365,7 +393,7 @@ export default function EstudianteFichaPage() {
               />
               {topFortalezas.length === 0 ? (
                 <p className="mt-4 text-sm text-slate-500">
-                  Aún no hay fortalezas confirmadas en intervenciones.
+                  Aún no hay fortalezas consolidadas en el perfil base.
                 </p>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -407,7 +435,7 @@ export default function EstudianteFichaPage() {
                       <PerfilHallazgoGroup
                         title="Intereses conocidos"
                         tipo="interes"
-                        items={hallazgosPerfil}
+                        items={interesesConsolidadosPerfil}
                       />
                     </div>
                   </PerfilMarcoTerritorio>
@@ -457,7 +485,7 @@ export default function EstudianteFichaPage() {
                     ))
                   ) : (
                     <p className="text-sm text-slate-500">
-                      Aún no existen intereses observados.
+                      Aún no hay intereses consolidados en el perfil base.
                     </p>
                   )}
                 </div>

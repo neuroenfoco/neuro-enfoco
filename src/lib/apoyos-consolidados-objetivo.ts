@@ -1,3 +1,20 @@
+/**
+ * Apoyos consolidados por objetivo — lectura que cruza planificación y uso.
+ *
+ * **Pregunta que responde:** «¿Cómo se relacionan los apoyos planificados en el
+ * objetivo con el uso del apoyo documentado en intervenciones vinculadas?»
+ *
+ * ## Capas semánticas (A18.5)
+ *
+ * | Capa | Fuente | Rol en este módulo |
+ * |------|--------|-------------------|
+ * | Planificación | `ObjetivoPIE.apoyosPlanificadosIds` | Apoyos previstos al planificar el objetivo |
+ * | Uso del apoyo | `Sesion.apoyosUtilizados` (ApoyoSesionId) | Evidencia documentada en intervenciones |
+ * | Institucional | `ApoyoPIE` | **No** incluido aquí; ver `apoyos-view.ts` |
+ *
+ * Complementa ApoyoPIE (¿qué implementamos?) con trazabilidad planificación ↔ uso.
+ */
+
 import {
   APOYO_PLANIFICADO_OTRO_ID,
   getApoyoPlanificadoNombre,

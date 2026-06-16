@@ -1,4 +1,4 @@
-import { enrichObjetivoPIEResumen } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
+import { enrichObjetivoPIE } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
 import type { ConclusionSustentanteResumen } from "@/lib/evaluacion-integral/evaluacion-integral-types";
 import { buildObjetivoSeguimiento } from "@/lib/objetivos/objetivo-seguimiento";
 import {
@@ -7,12 +7,8 @@ import {
 } from "@/lib/paci/paci-dimensiones";
 import { buildPACICadenaTrazabilidadObjetivo } from "@/lib/paci/paci-trazabilidad";
 import type { PACIConclusionTrazabilidad } from "@/lib/paci/paci-trazabilidad";
-import {
-  getObjetivoPIEResumen,
-  getObjetivoPIEById,
-  getObjetivosPIEByEstudianteId,
-  type ObjetivoPIE,
-} from "@/lib/pie-objectives-storage";
+import { getObjetivosRepository } from "@/lib/repositories/repository-factory";
+import type { ObjetivoPIE } from "@/lib/repositories/objetivos-repository";
 
 export type BarreraResumen = {
   id: string;
@@ -243,7 +239,7 @@ export function buildObjetivoBarrerasApoyosView(
 export function getObjetivoBarrerasApoyosView(
   objetivoId: string
 ): ObjetivoBarrerasApoyosView | null {
-  const objetivo = getObjetivoPIEById(objetivoId);
+  const objetivo = getObjetivosRepository().getById(objetivoId);
   if (!objetivo) return null;
   return buildObjetivoBarrerasApoyosView(objetivo);
 }
@@ -251,14 +247,12 @@ export function getObjetivoBarrerasApoyosView(
 export function getObjetivoBarrerasApoyosDetalleView(
   objetivoId: string
 ): ObjetivoBarrerasApoyosDetalleView | null {
-  const objetivo = getObjetivoPIEById(objetivoId);
+  const objetivo = getObjetivosRepository().getById(objetivoId);
   if (!objetivo) return null;
 
   const trazabilidad = buildPACICadenaTrazabilidadObjetivo(objetivo);
   const base = buildObjetivoBarrerasApoyosView(objetivo);
-  const resumenEnriquecido = enrichObjetivoPIEResumen(
-    getObjetivoPIEResumen(objetivo)
-  );
+  const resumenEnriquecido = enrichObjetivoPIE(objetivo);
 
   return {
     ...base,
@@ -275,7 +269,8 @@ export function getObjetivoBarrerasApoyosDetalleView(
 export function getEstudianteObjetivosBarrerasApoyos(
   estudianteId: string
 ): ObjetivoBarrerasApoyosView[] {
-  return getObjetivosPIEByEstudianteId(estudianteId)
+  return getObjetivosRepository()
+    .getByEstudianteId(estudianteId)
     .map((objetivo) => buildObjetivoBarrerasApoyosView(objetivo))
     .sort((a, b) => a.objetivoNombre.localeCompare(b.objetivoNombre, "es"));
 }
@@ -283,7 +278,7 @@ export function getEstudianteObjetivosBarrerasApoyos(
 export function getEstudianteBarrerasApoyosResumen(
   estudianteId: string
 ): EstudianteBarrerasApoyosResumen {
-  const objetivos = getObjetivosPIEByEstudianteId(estudianteId);
+  const objetivos = getObjetivosRepository().getByEstudianteId(estudianteId);
   const views = objetivos.map((objetivo) =>
     buildObjetivoBarrerasApoyosView(objetivo)
   );
@@ -320,7 +315,7 @@ export function getEstudianteBarrerasApoyosResumen(
 }
 
 export function getObjetivoBarrerasApoyosConSeguimiento(objetivoId: string) {
-  const objetivo = getObjetivoPIEById(objetivoId);
+  const objetivo = getObjetivosRepository().getById(objetivoId);
   if (!objetivo) return null;
 
   return {

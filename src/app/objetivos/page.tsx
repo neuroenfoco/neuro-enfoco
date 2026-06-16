@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
 import {
   deleteObjetivoPIE,
@@ -8,29 +9,72 @@ import {
   getObjetivosPIEResumen,
   type ObjetivoPIEResumen,
 } from "@/lib/pie-objectives-storage";
+import { getEstudiantesRepositoryAsync } from "@/lib/repositories/repository-factory";
 import { getEstudianteById } from "@/lib/students-storage";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const ESTUDIANTE_NO_ENCONTRADO = "Estudiante no encontrado";
 
 export default function ObjetivosPage() {
+  const guidance = GLOSSARY.institutionalGuidance.objetivos;
   const [objetivos, setObjetivos] = useState<ObjetivoPIEResumen[]>([]);
+  const [estudianteNombres, setEstudianteNombres] = useState<
+    Record<string, string>
+  >({});
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
 
-  function refreshObjetivos() {
-    setObjetivos(getObjetivosPIEResumen());
-  }
+  const refreshObjetivos = useCallback(async () => {
+    const list = getObjetivosPIEResumen();
+    setObjetivos(list);
+
+    const nombres: Record<string, string> = {};
+    for (const resumen of list) {
+      const id = resumen.objetivo.estudianteId;
+      const local = getEstudianteById(id);
+      if (local) nombres[id] = local.nombre;
+    }
+
+    try {
+      const estudiantes = await getEstudiantesRepositoryAsync().getAll();
+      for (const estudiante of estudiantes) {
+        nombres[estudiante.id] = estudiante.nombre;
+      }
+
+      const missingIds = [
+        ...new Set(
+          list
+            .map((item) => item.objetivo.estudianteId)
+            .filter((id) => !nombres[id])
+        ),
+      ];
+
+      await Promise.all(
+        missingIds.map(async (id) => {
+          const estudiante =
+            await getEstudiantesRepositoryAsync().getById(id);
+          if (estudiante) nombres[id] = estudiante.nombre;
+        })
+      );
+    } catch {
+      // Mantiene nombres resueltos desde localStorage si el async falla.
+    }
+
+    setEstudianteNombres(nombres);
+  }, []);
 
   useEffect(() => {
-    refreshObjetivos();
-    window.addEventListener("focus", refreshObjetivos);
-    window.addEventListener("storage", refreshObjetivos);
+    void refreshObjetivos();
+    const onRefresh = () => void refreshObjetivos();
+    window.addEventListener("focus", onRefresh);
+    window.addEventListener("storage", onRefresh);
 
     return () => {
-      window.removeEventListener("focus", refreshObjetivos);
-      window.removeEventListener("storage", refreshObjetivos);
+      window.removeEventListener("focus", onRefresh);
+      window.removeEventListener("storage", onRefresh);
     };
-  }, []);
+  }, [refreshObjetivos]);
 
   function handleConfirmDelete() {
     if (!pendingDeleteId) return;
@@ -39,10 +83,18 @@ export default function ObjetivosPage() {
     setPendingDeleteId(null);
 
     if (deleted) {
-      refreshObjetivos();
+      void refreshObjetivos();
       setDeleteMessage("Objetivo eliminado correctamente.");
       window.setTimeout(() => setDeleteMessage(null), 4000);
     }
+  }
+
+  function resolveEstudianteNombre(estudianteId: string): string {
+    return (
+      estudianteNombres[estudianteId] ??
+      getEstudianteById(estudianteId)?.nombre ??
+      ESTUDIANTE_NO_ENCONTRADO
+    );
   }
 
   return (
@@ -51,7 +103,7 @@ export default function ObjetivosPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                Objetivos PIE
+                {GLOSSARY.objetivo.pie}
               </h1>
               <p className="mt-1 text-sm text-slate-600">
                 {GLOSSARY.objetivo.vinculadosDimensiones}
@@ -76,6 +128,24 @@ export default function ObjetivosPage() {
             </p>
           )}
 
+          <div className="mb-6 space-y-4">
+            <InstitutionalInfoCard
+              variant="info"
+              title={guidance.info.title}
+              body={guidance.info.body}
+              detail={guidance.info.detail}
+            />
+
+            {objetivos.length === 0 ? (
+              <InstitutionalInfoCard
+                variant="recomendacion"
+                body={guidance.recomendacionSinObjetivos.body}
+                ctaLabel={guidance.recomendacionSinObjetivos.cta}
+                ctaHref="/objetivos/nuevo"
+              />
+            ) : null}
+          </div>
+
           {objetivos.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
               <p className="text-sm text-slate-600">
@@ -90,18 +160,17 @@ export default function ObjetivosPage() {
             </div>
           ) : (
             <ul className="space-y-4">
-              {objetivos.map((resumen) => {
-                const estudiante = getEstudianteById(resumen.objetivo.estudianteId);
-                return (
-                  <li key={resumen.objetivo.id}>
-                    <ObjetivoCard
-                      resumen={resumen}
-                      estudianteNombre={estudiante?.nombre ?? "Estudiante no encontrado"}
-                      onDelete={() => setPendingDeleteId(resumen.objetivo.id)}
-                    />
-                  </li>
-                );
-              })}
+              {objetivos.map((resumen) => (
+                <li key={resumen.objetivo.id}>
+                  <ObjetivoCard
+                    resumen={resumen}
+                    estudianteNombre={resolveEstudianteNombre(
+                      resumen.objetivo.estudianteId
+                    )}
+                    onDelete={() => setPendingDeleteId(resumen.objetivo.id)}
+                  />
+                </li>
+              ))}
             </ul>
           )}
         </main>

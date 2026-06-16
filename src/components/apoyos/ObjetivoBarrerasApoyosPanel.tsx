@@ -10,13 +10,17 @@ import { useCallback, useEffect, useState } from "react";
 
 const COPY = GLOSSARY.barrerasApoyos;
 
+export type ObjetivoBarrerasApoyosSection = "fundamento" | "apoyosSugeridos";
+
 type ObjetivoBarrerasApoyosPanelProps = {
   objetivoId: string;
+  sections?: ObjetivoBarrerasApoyosSection[];
   onCrearApoyoDesdeSugerido?: (apoyo: ApoyoResumen) => void;
 };
 
 export function ObjetivoBarrerasApoyosPanel({
   objetivoId,
+  sections = ["fundamento", "apoyosSugeridos"],
   onCrearApoyoDesdeSugerido,
 }: ObjetivoBarrerasApoyosPanelProps) {
   const [detalle, setDetalle] = useState<ObjetivoBarrerasApoyosDetalleView | null>(
@@ -39,45 +43,58 @@ export function ObjetivoBarrerasApoyosPanel({
 
   if (!detalle) return null;
 
+  const showFundamento = sections.includes("fundamento");
+  const showApoyosSugeridos = sections.includes("apoyosSugeridos");
+
+  if (!showFundamento && !showApoyosSugeridos) return null;
+
   return (
-    <section className="mt-6 space-y-6">
-      <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50/30 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-violet-800/80">
-          {COPY.porQueEsteObjetivo}
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {detalle.sustentoNarrativo}
-        </p>
-        {!detalle.tieneSustentoEvaluativo ? (
-          <p className="mt-3 text-xs text-slate-500">{COPY.sinSustentoEvaluativo}</p>
-        ) : null}
-      </div>
+    <section className="mt-8 space-y-6">
+      {showFundamento ? (
+        <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50/30 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-violet-800/80">
+            {GLOSSARY.objetivo.detalle.fundamentoTitulo}
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+            {detalle.sustentoNarrativo}
+          </p>
+          {!detalle.tieneSustentoEvaluativo ? (
+            <p className="mt-3 text-xs text-slate-500">{COPY.sinSustentoEvaluativo}</p>
+          ) : null}
 
-      <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50/40 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800/80">
-          {COPY.barrerasRelacionadas}
-        </p>
-        {detalle.barreras.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">{COPY.sinBarreras}</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {detalle.barreras.map((barrera) => (
-              <li
-                key={barrera.id}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
-              >
-                <span className="mr-2 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 ring-1 ring-inset ring-amber-100">
-                  {barrera.origen === "conclusion"
-                    ? COPY.origenConclusion
-                    : COPY.origenHallazgo}
-                </span>
-                {barrera.descripcion}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          <div className="mt-6 border-t border-violet-100/80 pt-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+              {COPY.conclusionesRelacionadas}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">{COPY.trazabilidad}</p>
+            {detalle.conclusionesRelacionadas.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-600">
+                {GLOSSARY.planificacionEvaluativa.sinTrazabilidad}
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {detalle.conclusionesRelacionadas.map((conclusion) => (
+                  <li
+                    key={conclusion.id}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <p className="font-medium text-slate-900">
+                      {conclusion.prioridadLabel}
+                    </p>
+                    <p className="mt-1 text-slate-700">{conclusion.enunciado}</p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {conclusion.evaluacionTipoLabel} ·{" "}
+                      {conclusion.evaluacionFechaReferencia}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : null}
 
+      {showApoyosSugeridos ? (
       <div className="rounded-2xl border border-teal-200/60 bg-gradient-to-br from-teal-50/30 to-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-teal-800/80">
           {COPY.apoyosRecomendados}
@@ -112,36 +129,7 @@ export function ObjetivoBarrerasApoyosPanel({
           </ul>
         )}
       </div>
-
-      <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-          {COPY.conclusionesRelacionadas}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">{GLOSSARY.barrerasApoyos.trazabilidad}</p>
-        {detalle.conclusionesRelacionadas.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">
-            {GLOSSARY.planificacionEvaluativa.sinTrazabilidad}
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {detalle.conclusionesRelacionadas.map((conclusion) => (
-              <li
-                key={conclusion.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm"
-              >
-                <p className="font-medium text-slate-900">
-                  {conclusion.prioridadLabel}
-                </p>
-                <p className="mt-1 text-slate-700">{conclusion.enunciado}</p>
-                <p className="mt-2 text-xs text-slate-500">
-                  {conclusion.evaluacionTipoLabel} ·{" "}
-                  {conclusion.evaluacionFechaReferencia}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      ) : null}
     </section>
   );
 }

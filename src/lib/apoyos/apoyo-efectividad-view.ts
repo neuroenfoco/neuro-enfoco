@@ -1,16 +1,31 @@
 import { getApoyoIntervencionResumen } from "@/lib/apoyos/apoyo-intervencion-view";
-import { readApoyosPIE } from "@/lib/apoyos/apoyos-persistence";
-import {
-  getApoyoPIEById,
-  getApoyosByEstudianteId,
-} from "@/lib/apoyos/apoyos-storage";
 import { GLOSSARY } from "@/lib/copy/glossary";
+import { getApoyosRepository } from "@/lib/repositories/repository-factory";
+
+/**
+ * Efectividad y estado operacional de ApoyoPIE.
+ * Cadena: ApoyoPIE → VinculoApoyoIntervencion → Intervención → Sesiones.
+ * No cruza Sesion.apoyosUtilizados (uso del catálogo en evidencia).
+ */
 
 export type ApoyoEfectividadEstado =
   | "sin_actividad"
   | "actividad_inicial"
   | "en_desarrollo"
   | "con_evidencia";
+
+/** Estado operacional mínimo (A18.5.2): trazabilidad vía vínculos + sesiones, no uso en catálogo. */
+export type ApoyoEstadoOperacional =
+  | "sin_trazabilidad"
+  | "sin_uso_documentado"
+  | "uso_documentado"
+  | "uso_frecuente";
+
+export type ApoyoEstadoOperacionalView = {
+  estado: ApoyoEstadoOperacional;
+  label: string;
+  observacion: string;
+};
 
 export type ApoyoEfectividadView = {
   apoyoId: string;
@@ -32,7 +47,27 @@ export type EstudianteEfectividadApoyosView = {
   apoyos: ApoyoEfectividadView[];
 };
 
+export type ObjetivoApoyosEstadoOperacionalResumen = {
+  objetivoId: string;
+  total: number;
+  usoFrecuente: number;
+  usoDocumentado: number;
+  sinUsoDocumentado: number;
+  sinTrazabilidad: number;
+};
+
 const COPY = GLOSSARY.apoyosImplementados.efectividadOperacional;
+const OP_COPY = GLOSSARY.apoyosImplementados.estadoOperacionalApoyo;
+
+export const APOYO_ESTADO_OPERACIONAL_STYLES: Record<
+  ApoyoEstadoOperacional,
+  string
+> = {
+  sin_trazabilidad: "bg-slate-100 text-slate-600 ring-slate-200",
+  sin_uso_documentado: "bg-amber-50 text-amber-800 ring-amber-100",
+  uso_documentado: "bg-sky-50 text-sky-800 ring-sky-100",
+  uso_frecuente: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+};
 
 export const APOYO_EFECTIVIDAD_ESTADO_STYLES: Record<
   ApoyoEfectividadEstado,
@@ -43,6 +78,45 @@ export const APOYO_EFECTIVIDAD_ESTADO_STYLES: Record<
   en_desarrollo: "bg-amber-50 text-amber-800 ring-amber-100",
   con_evidencia: "bg-emerald-50 text-emerald-800 ring-emerald-100",
 };
+
+function resolveEstadoOperacional(
+  cantidadIntervenciones: number,
+  cantidadEvidencias: number,
+  efectividadEstado: ApoyoEfectividadEstado
+): ApoyoEstadoOperacionalView {
+  if (cantidadIntervenciones === 0) {
+    return {
+      estado: "sin_trazabilidad",
+      label: OP_COPY.sinTrazabilidad,
+      observacion: OP_COPY.observacionSinTrazabilidad,
+    };
+  }
+
+  if (
+    cantidadEvidencias >= 3 ||
+    efectividadEstado === "con_evidencia"
+  ) {
+    return {
+      estado: "uso_frecuente",
+      label: OP_COPY.usoFrecuente,
+      observacion: OP_COPY.observacionUsoFrecuente,
+    };
+  }
+
+  if (cantidadIntervenciones >= 1 && cantidadEvidencias >= 1) {
+    return {
+      estado: "uso_documentado",
+      label: OP_COPY.usoDocumentado,
+      observacion: OP_COPY.observacionUsoDocumentado,
+    };
+  }
+
+  return {
+    estado: "sin_uso_documentado",
+    label: OP_COPY.vinculadoSinEvidencias,
+    observacion: OP_COPY.observacionVinculadoSinEvidencias,
+  };
+}
 
 function resolveEstado(
   cantidadIntervenciones: number,
@@ -114,15 +188,66 @@ function buildView(
 export function getApoyoEfectividadView(
   apoyoId: string
 ): ApoyoEfectividadView | null {
-  const apoyo = getApoyoPIEById(apoyoId);
+  const apoyo = getApoyosRepository().getById(apoyoId);
   if (!apoyo) return null;
   return buildView(apoyoId, apoyo.nombre);
+}
+
+/** Trazabilidad operacional ApoyoPIE → intervenciones vinculadas → sesiones (sin cruzar apoyosUtilizados). */
+export function getApoyoEstadoOperacional(
+  apoyoId: string
+): ApoyoEstadoOperacionalView | null {
+  const efectividad = getApoyoEfectividadView(apoyoId);
+  if (!efectividad) return null;
+
+  return resolveEstadoOperacional(
+    efectividad.cantidadIntervenciones,
+    efectividad.cantidadEvidencias,
+    efectividad.estado
+  );
+}
+
+/** Resumen operacional agregado de apoyos institucionales de un objetivo (A18.5.3). */
+export function getObjetivoApoyosEstadoOperacionalResumen(
+  objetivoId: string
+): ObjetivoApoyosEstadoOperacionalResumen {
+  const apoyos = getApoyosRepository().getByObjetivoId(objetivoId);
+  const resumen: ObjetivoApoyosEstadoOperacionalResumen = {
+    objetivoId,
+    total: apoyos.length,
+    usoFrecuente: 0,
+    usoDocumentado: 0,
+    sinUsoDocumentado: 0,
+    sinTrazabilidad: 0,
+  };
+
+  for (const apoyo of apoyos) {
+    const estado = getApoyoEstadoOperacional(apoyo.id);
+    if (!estado) continue;
+
+    switch (estado.estado) {
+      case "uso_frecuente":
+        resumen.usoFrecuente += 1;
+        break;
+      case "uso_documentado":
+        resumen.usoDocumentado += 1;
+        break;
+      case "sin_uso_documentado":
+        resumen.sinUsoDocumentado += 1;
+        break;
+      case "sin_trazabilidad":
+        resumen.sinTrazabilidad += 1;
+        break;
+    }
+  }
+
+  return resumen;
 }
 
 export function getEstudianteEfectividadApoyos(
   estudianteId: string
 ): EstudianteEfectividadApoyosView {
-  const apoyos = getApoyosByEstudianteId(estudianteId);
+  const apoyos = getApoyosRepository().getByEstudianteId(estudianteId);
   const views = apoyos.map((apoyo) => buildView(apoyo.id, apoyo.nombre));
 
   return {
@@ -145,7 +270,7 @@ export function getApoyoEfectividadIndicadores(): {
 } {
   let apoyosConEvidencia = 0;
 
-  for (const apoyo of readApoyosPIE()) {
+  for (const apoyo of getApoyosRepository().getAll()) {
     const view = buildView(apoyo.id, apoyo.nombre);
     if (view.estado === "con_evidencia") {
       apoyosConEvidencia += 1;

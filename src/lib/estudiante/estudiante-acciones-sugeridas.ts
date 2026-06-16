@@ -1,17 +1,19 @@
 import { GLOSSARY } from "@/lib/copy/glossary";
-import { getEvaluacionesIntegralesByEstudianteId } from "@/lib/evaluacion-integral/evaluacion-integral-storage";
-import { getIntervencionesByEstudianteId } from "@/lib/intervenciones-storage";
 import { getEstudiantePACIEstadoResumen } from "@/lib/estudiante/estudiante-resumen-integral";
 import {
   getEstudianteObjetivosSeguimiento,
 } from "@/lib/objetivos/objetivo-seguimiento";
-import { getObjetivosPIEByEstudianteId } from "@/lib/pie-objectives-storage";
+import {
+  getEvaluacionesRepository,
+  getIntervencionesRepository,
+  getObjetivosRepository,
+  getSesionesRepository,
+} from "@/lib/repositories/repository-factory";
 import {
   isWithinDays,
   parseFechaOrdenInstitucional,
   startOfTodayMs,
 } from "@/lib/shared/fecha-institucional";
-import { getSesionesByIntervencionId } from "@/lib/sessions-storage";
 
 export type AccionSugeridaId =
   | "evaluacion_integral"
@@ -34,7 +36,9 @@ const DIAS_SIN_INTERVENCION_SEGUIMIENTO = 30;
 function tieneIntervencionReciente(estudianteId: string): boolean {
   const referenceMs = startOfTodayMs();
 
-  for (const intervencion of getIntervencionesByEstudianteId(estudianteId)) {
+  for (const intervencion of getIntervencionesRepository().getByEstudianteId(
+    estudianteId
+  )) {
     if (
       isWithinDays(
         parseFechaOrdenInstitucional(intervencion.fecha),
@@ -45,7 +49,9 @@ function tieneIntervencionReciente(estudianteId: string): boolean {
       return true;
     }
 
-    for (const sesion of getSesionesByIntervencionId(intervencion.id)) {
+    for (const sesion of getSesionesRepository().getByIntervencionId(
+      intervencion.id
+    )) {
       if (
         isWithinDays(
           parseFechaOrdenInstitucional(sesion.fecha),
@@ -62,9 +68,9 @@ function tieneIntervencionReciente(estudianteId: string): boolean {
 }
 
 function tieneEvaluacionIntegral(estudianteId: string): boolean {
-  return getEvaluacionesIntegralesByEstudianteId(estudianteId).some(
-    (item) => item.estado !== "anulada"
-  );
+  return getEvaluacionesRepository()
+    .getByEstudianteId(estudianteId)
+    .some((item) => item.estado !== "anulada");
 }
 
 function agregarAccionesSeguimientoObjetivos(
@@ -114,7 +120,8 @@ export function getEstudianteAccionesSugeridas(
   const acciones: AccionSugerida[] = [];
 
   const evaluacion = tieneEvaluacionIntegral(estudianteId);
-  const objetivos = getObjetivosPIEByEstudianteId(estudianteId).length > 0;
+  const objetivos =
+    getObjetivosRepository().getByEstudianteId(estudianteId).length > 0;
   const paciEstado = getEstudiantePACIEstadoResumen(estudianteId);
 
   if (!evaluacion) {

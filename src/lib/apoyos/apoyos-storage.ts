@@ -9,8 +9,12 @@ import type {
   CreateApoyoPIEInput,
   UpdateApoyoPIEInput,
 } from "@/lib/apoyos/apoyos-types";
+import {
+  assertEstudianteExiste,
+  assertEstudianteExisteAsync,
+} from "@/lib/evaluacion-integral/evaluacion-integral-validacion";
+import { getProfesionalDisplayNombre } from "@/lib/institucional/profesional-resolve";
 import { getObjetivoPIEById } from "@/lib/pie-objectives-storage";
-import { getEstudianteById } from "@/lib/students-storage";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -22,11 +26,35 @@ function trimOptional(value: string | undefined): string | undefined {
   return trimmed || undefined;
 }
 
-function assertEstudianteExiste(estudianteId: string): string | null {
-  if (!getEstudianteById(estudianteId)) {
-    return "Estudiante no encontrado.";
+function resolveResponsableProfesionalFields(
+  responsableProfesionalId: string | undefined
+): Pick<ApoyoPIE, "responsableProfesionalId" | "responsableNombreSnapshot"> {
+  const id = trimOptional(responsableProfesionalId);
+  if (!id) {
+    return {
+      responsableProfesionalId: undefined,
+      responsableNombreSnapshot: undefined,
+    };
   }
-  return null;
+
+  return {
+    responsableProfesionalId: id,
+    responsableNombreSnapshot: getProfesionalDisplayNombre(id),
+  };
+}
+
+function mergeResponsableProfesionalFields(
+  input: UpdateApoyoPIEInput,
+  current: ApoyoPIE
+): Pick<ApoyoPIE, "responsableProfesionalId" | "responsableNombreSnapshot"> {
+  if (input.responsableProfesionalId === undefined) {
+    return {
+      responsableProfesionalId: current.responsableProfesionalId,
+      responsableNombreSnapshot: current.responsableNombreSnapshot,
+    };
+  }
+
+  return resolveResponsableProfesionalFields(input.responsableProfesionalId);
 }
 
 function assertObjetivoParaEstudiante(
@@ -41,6 +69,40 @@ function assertObjetivoParaEstudiante(
     return "El objetivo no pertenece al estudiante indicado.";
   }
   return null;
+}
+
+function persistApoyoPIE(input: CreateApoyoPIEInput): ApoyoPIE | null {
+  const estudianteId = input.estudianteId.trim();
+  const nombre = input.nombre.trim();
+
+  if (!nombre) return null;
+
+  const objetivoPieId = trimOptional(input.objetivoPieId);
+  const objetivoError = assertObjetivoParaEstudiante(objetivoPieId, estudianteId);
+  if (objetivoError) return null;
+
+  const timestamp = nowIso();
+  const responsableProfesional = resolveResponsableProfesionalFields(
+    input.responsableProfesionalId
+  );
+  const apoyo: ApoyoPIE = normalizeApoyoPIE({
+    id: crypto.randomUUID(),
+    estudianteId,
+    objetivoPieId,
+    nombre,
+    tipo: input.tipo,
+    descripcion: trimOptional(input.descripcion),
+    ...responsableProfesional,
+    responsable: trimOptional(input.responsable),
+    frecuencia: trimOptional(input.frecuencia),
+    estado: input.estado ?? "activo",
+    creadoEn: timestamp,
+    actualizadoEn: timestamp,
+  });
+
+  const items = readApoyosPIE();
+  writeApoyosPIE([apoyo, ...items]);
+  return apoyo;
 }
 
 export function getApoyoPIEById(apoyoId: string): ApoyoPIE | null {
@@ -60,36 +122,21 @@ export function getApoyosByObjetivoId(objetivoPieId: string): ApoyoPIE[] {
 }
 
 export function createApoyoPIE(input: CreateApoyoPIEInput): ApoyoPIE | null {
-  const estudianteId = input.estudianteId.trim();
-  const nombre = input.nombre.trim();
-
-  if (!nombre) return null;
-
-  const estudianteError = assertEstudianteExiste(estudianteId);
+  const estudianteError = assertEstudianteExiste(input.estudianteId.trim());
   if (estudianteError) return null;
 
-  const objetivoPieId = trimOptional(input.objetivoPieId);
-  const objetivoError = assertObjetivoParaEstudiante(objetivoPieId, estudianteId);
-  if (objetivoError) return null;
+  return persistApoyoPIE(input);
+}
 
-  const timestamp = nowIso();
-  const apoyo: ApoyoPIE = normalizeApoyoPIE({
-    id: crypto.randomUUID(),
-    estudianteId,
-    objetivoPieId,
-    nombre,
-    tipo: input.tipo,
-    descripcion: trimOptional(input.descripcion),
-    responsable: trimOptional(input.responsable),
-    frecuencia: trimOptional(input.frecuencia),
-    estado: input.estado ?? "activo",
-    creadoEn: timestamp,
-    actualizadoEn: timestamp,
-  });
+export async function createApoyoPIEAsync(
+  input: CreateApoyoPIEInput
+): Promise<ApoyoPIE | null> {
+  const estudianteError = await assertEstudianteExisteAsync(
+    input.estudianteId.trim()
+  );
+  if (estudianteError) return null;
 
-  const items = readApoyosPIE();
-  writeApoyosPIE([apoyo, ...items]);
-  return apoyo;
+  return persistApoyoPIE(input);
 }
 
 export function updateApoyoPIE(
@@ -115,6 +162,7 @@ export function updateApoyoPIE(
   );
   if (objetivoError) return null;
 
+  const responsableProfesional = mergeResponsableProfesionalFields(input, current);
   const updated = normalizeApoyoPIE({
     ...current,
     nombre,
@@ -123,6 +171,7 @@ export function updateApoyoPIE(
       input.descripcion !== undefined
         ? trimOptional(input.descripcion)
         : current.descripcion,
+    ...responsableProfesional,
     responsable:
       input.responsable !== undefined
         ? trimOptional(input.responsable)

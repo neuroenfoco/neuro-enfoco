@@ -536,8 +536,7 @@ export function createHallazgoPerfilBase(
 }
 
 /**
- * @deprecated Desde Fase A3 el ingreso PIE consolida vía EvaluacionIntegral +
- * HallazgoEvaluativo + consolidarHallazgosEvaluacion(). No usar en flujos nuevos.
+ * @deprecated Usar completarIngresoPIE() o createHallazgoPerfil con origen ingreso_pie.
  * Se conserva para compatibilidad con datos o llamadas legacy.
  */
 export function createHallazgoIngresoPIE(
@@ -547,7 +546,7 @@ export function createHallazgoIngresoPIE(
 ): HallazgoPerfil | null {
   if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
     console.warn(
-      "[createHallazgoIngresoPIE] Deprecado: usar completarIngresoPIE() y el pipeline EvaluacionIntegral."
+      "[createHallazgoIngresoPIE] Deprecado: usar completarIngresoPIE()."
     );
   }
   return createHallazgoPerfil({

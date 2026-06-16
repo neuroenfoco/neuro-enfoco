@@ -1,16 +1,16 @@
 import { getEvidenciasPorObjetivoId } from "@/lib/evidencias-por-objetivo";
-import { getIntervencionesByObjetivoId } from "@/lib/intervenciones-storage";
+import {
+  getIntervencionesRepository,
+  getObjetivosRepository,
+} from "@/lib/repositories/repository-factory";
+import type { Intervencion } from "@/lib/repositories/intervenciones-repository";
+import type { ObjetivoPIE } from "@/lib/repositories/objetivos-repository";
 import {
   parseFechaOrdenInstitucional,
   startOfTodayMs,
   diasDesdeInstitucional,
 } from "@/lib/shared/fecha-institucional";
-import {
-  getObjetivoPIEById,
-  getObjetivosPIEByEstudianteId,
-  type ObjetivoPIE,
-} from "@/lib/pie-objectives-storage";
-import type { Sesion } from "@/lib/sessions-storage";
+import type { Sesion } from "@/lib/repositories/sesiones-repository";
 
 export type EstadoSeguimientoObjetivo =
   | "sin_seguimiento"
@@ -51,7 +51,7 @@ function formatUltimaActividadIso(timestamp: number): string {
 }
 
 function resolverUltimaActividad(
-  intervenciones: ReturnType<typeof getIntervencionesByObjetivoId>,
+  intervenciones: Intervencion[],
   evidencias: Sesion[]
 ): { timestamp: number | null; label: string | null; iso: string | null } {
   let maxTimestamp = 0;
@@ -99,7 +99,7 @@ export function resolverEstadoSeguimiento(
 }
 
 export function buildObjetivoSeguimiento(objetivo: ObjetivoPIE): ObjetivoSeguimiento {
-  const intervenciones = getIntervencionesByObjetivoId(objetivo.id);
+  const intervenciones = getIntervencionesRepository().getByObjetivoId(objetivo.id);
   const evidencias = getEvidenciasPorObjetivoId(objetivo.id);
   const ultima = resolverUltimaActividad(intervenciones, evidencias);
   const diasSinActividad =
@@ -145,7 +145,7 @@ export function buildEstudianteSeguimientoResumen(
 }
 
 export function getObjetivoSeguimiento(objetivoId: string): ObjetivoSeguimiento | null {
-  const objetivo = getObjetivoPIEById(objetivoId);
+  const objetivo = getObjetivosRepository().getById(objetivoId);
   if (!objetivo) return null;
   return buildObjetivoSeguimiento(objetivo);
 }
@@ -153,7 +153,8 @@ export function getObjetivoSeguimiento(objetivoId: string): ObjetivoSeguimiento 
 export function getEstudianteObjetivosSeguimiento(
   estudianteId: string
 ): ObjetivoSeguimiento[] {
-  return getObjetivosPIEByEstudianteId(estudianteId)
+  return getObjetivosRepository()
+    .getByEstudianteId(estudianteId)
     .map((objetivo) => buildObjetivoSeguimiento(objetivo))
     .sort((a, b) => a.objetivoNombre.localeCompare(b.objetivoNombre, "es"));
 }

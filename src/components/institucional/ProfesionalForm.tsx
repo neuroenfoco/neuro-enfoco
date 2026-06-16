@@ -5,7 +5,7 @@ import {
   CATALOGO_ROLES_PROFESIONAL,
   type RolProfesionalId,
 } from "@/lib/institucional/roles-profesional-catalog";
-import type { Profesional } from "@/lib/institucional/profesionales-storage";
+import type { Profesional } from "@/lib/repositories/profesionales-repository";
 
 export type ProfesionalFormValues = {
   nombres: string;

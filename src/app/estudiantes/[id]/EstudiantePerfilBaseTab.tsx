@@ -3,7 +3,9 @@
 import { HallazgoEntradaHibrida } from "@/components/perfil/HallazgoEntradaHibrida";
 import { HallazgoHistorialTrigger } from "@/components/perfil/HallazgoHistorialTrigger";
 import { PerfilMarcoTerritorio } from "@/components/perfil/PerfilMarcoTerritorio";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { GLOSSARY } from "@/lib/copy/glossary";
+import { ROUTES } from "@/lib/copy/navigation";
 import {
   getHallazgoBusquedaPlaceholder,
   getHallazgoFormulacionOriginalVisible,
@@ -69,6 +71,7 @@ export function EstudiantePerfilBaseTab({
   estudianteId,
   estudiantePrimerNombre,
 }: EstudiantePerfilBaseTabProps) {
+  const guidance = GLOSSARY.institutionalGuidance.perfilBase;
   const [hallazgos, setHallazgos] = useState<HallazgoPerfil[]>([]);
 
   const refresh = useCallback(() => {
@@ -89,7 +92,7 @@ export function EstudiantePerfilBaseTab({
     <div className="space-y-8">
       <section className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/60 via-white to-violet-50/30 p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-          Conocimiento profesional inicial
+          {guidance.eyebrow}
         </p>
         <h2 className="mt-1 text-2xl font-semibold text-slate-900">
           {GLOSSARY.perfilBase.tituloDe(estudiantePrimerNombre)}
@@ -98,6 +101,22 @@ export function EstudiantePerfilBaseTab({
           {GLOSSARY.perfilBase.subtitulo}
         </p>
       </section>
+
+      <InstitutionalInfoCard
+        variant="info"
+        title={guidance.info.title}
+        body={guidance.info.body}
+        detail={guidance.info.detail}
+      />
+
+      {hallazgos.length === 0 ? (
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={guidance.recomendacionSinConsolidado.body}
+          ctaLabel={guidance.recomendacionSinConsolidado.ctaIngreso}
+          ctaHref={ROUTES.estudiantesIngreso}
+        />
+      ) : null}
 
       <PerfilMarcoTerritorio dimension="perfil_estudiante">
         <p className="mb-4 text-sm font-semibold text-slate-800">

@@ -5,8 +5,15 @@ import type {
   ApoyoPIEEstado,
   ApoyoPIETipo,
 } from "@/lib/apoyos/apoyos-types";
+import {
+  formatProfesionalNombreCompleto,
+  getProfesionalRolNombre,
+  getProfesionalesActivos,
+} from "@/lib/institucional/profesionales-storage";
+import Link from "next/link";
 
 const COPY = GLOSSARY.apoyosImplementados;
+const PROF_COPY = GLOSSARY.profesional;
 
 const TIPOS: ApoyoPIETipo[] = [
   "adaptacion_acceso",
@@ -24,7 +31,7 @@ export type ApoyoPIEFormValues = {
   nombre: string;
   tipo: ApoyoPIETipo;
   descripcion: string;
-  responsable: string;
+  responsableProfesionalId: string;
   frecuencia: string;
   estado: ApoyoPIEEstado;
 };
@@ -41,7 +48,7 @@ const DEFAULT_VALUES: ApoyoPIEFormValues = {
   nombre: "",
   tipo: "otro",
   descripcion: "",
-  responsable: "",
+  responsableProfesionalId: "",
   frecuencia: "",
   estado: "activo",
 };
@@ -57,6 +64,7 @@ export function ApoyoPIEForm({
     ...DEFAULT_VALUES,
     ...initialValues,
   };
+  const profesionalesActivos = getProfesionalesActivos();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,7 +74,9 @@ export function ApoyoPIEForm({
       nombre: String(form.get("nombre") ?? "").trim(),
       tipo: String(form.get("tipo") ?? "otro") as ApoyoPIETipo,
       descripcion: String(form.get("descripcion") ?? "").trim(),
-      responsable: String(form.get("responsable") ?? "").trim(),
+      responsableProfesionalId: String(
+        form.get("responsableProfesionalId") ?? ""
+      ).trim(),
       frecuencia: String(form.get("frecuencia") ?? "").trim(),
       estado: String(form.get("estado") ?? "activo") as ApoyoPIEEstado,
     });
@@ -110,14 +120,48 @@ export function ApoyoPIEForm({
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-slate-700">
-          {COPY.responsable}
-          <input
-            name="responsable"
-            defaultValue={values.responsable}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          />
-        </label>
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <label
+              htmlFor="responsable-profesional"
+              className="text-sm font-medium text-slate-700"
+            >
+              {COPY.responsable}
+            </label>
+            <Link
+              href="/profesionales"
+              className="text-xs font-medium text-teal-700 hover:text-teal-800"
+            >
+              {PROF_COPY.gestionarProfesionales}
+            </Link>
+          </div>
+          {profesionalesActivos.length === 0 ? (
+            <p className="mt-1.5 text-sm text-amber-800">
+              {PROF_COPY.selectorVacio}{" "}
+              <Link
+                href="/profesionales/nuevo"
+                className="font-medium text-teal-700 hover:text-teal-800"
+              >
+                {PROF_COPY.nuevo}
+              </Link>
+            </p>
+          ) : (
+            <select
+              id="responsable-profesional"
+              name="responsableProfesionalId"
+              defaultValue={values.responsableProfesionalId}
+              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-100"
+            >
+              <option value="">{COPY.sinAsignar}</option>
+              {profesionalesActivos.map((profesional) => (
+                <option key={profesional.id} value={profesional.id}>
+                  {formatProfesionalNombreCompleto(profesional)} —{" "}
+                  {getProfesionalRolNombre(profesional)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
         <label className="block text-sm font-medium text-slate-700">
           {COPY.frecuencia}

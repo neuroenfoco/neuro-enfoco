@@ -5,9 +5,12 @@ import {
   type ApoyosConsolidadosObjetivoFicha,
   type VinculoObjetivoSesion,
 } from "@/lib/apoyos-consolidados-objetivo";
+import { GLOSSARY } from "@/lib/copy/glossary";
 import { ROUTES } from "@/lib/copy/navigation";
 import Link from "next/link";
 import { useState } from "react";
+
+const COPY = GLOSSARY.apoyosConsolidados;
 
 type ApoyosConsolidadosSectionProps = {
   consolidados: ApoyosConsolidadosObjetivoFicha;
@@ -28,41 +31,31 @@ export function ApoyosConsolidadosSection({
       className="mt-8 rounded-2xl border border-teal-200/60 bg-white p-6 shadow-[0_1px_3px_rgba(15,60,50,0.06)] sm:p-8"
     >
       <div>
-        <h2 className="text-sm font-semibold text-slate-900">
-          Apoyos de participación
-        </h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Planificación del objetivo y apoyos documentados en intervenciones
-          vinculadas.
-        </p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">
-          No implica efectividad del apoyo. Refleja planificación y registros del
-          equipo.
-        </p>
+        <h2 className="text-sm font-semibold text-slate-900">{COPY.titulo}</h2>
+        <p className="mt-1 text-xs text-slate-500">{COPY.subtitulo}</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">{COPY.ayuda}</p>
       </div>
 
       {sinDatos ? (
-        <p className="mt-6 text-sm text-slate-500">
-          Aún no hay apoyos planificados ni documentados para este objetivo.
-        </p>
+        <p className="mt-6 text-sm text-slate-500">{COPY.sinDatos}</p>
       ) : (
         <>
           <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-600">
-            <ResumenChip label="Planificados" value={String(resumen.totalPlanificados)} />
-            <ResumenChip label="Documentados" value={String(resumen.totalDocumentados)} />
+            <ResumenChip label={COPY.chipPlanificados} value={String(resumen.totalPlanificados)} />
+            <ResumenChip label={COPY.chipDocumentados} value={String(resumen.totalDocumentados)} />
             <ResumenChip
-              label="Intervenciones con apoyos"
+              label={COPY.chipIntervencionesConApoyos}
               value={String(resumen.totalIntervencionesConApoyos)}
             />
             {resumen.primeraDocumentacionGlobal && (
               <ResumenChip
-                label="Primera documentación"
+                label={COPY.chipPrimeraDocumentacion}
                 value={resumen.primeraDocumentacionGlobal}
               />
             )}
             {resumen.ultimaDocumentacionGlobal && (
               <ResumenChip
-                label="Última documentación"
+                label={COPY.chipUltimaDocumentacion}
                 value={resumen.ultimaDocumentacionGlobal}
               />
             )}
@@ -70,19 +63,19 @@ export function ApoyosConsolidadosSection({
 
           <div className="mt-8 space-y-8">
             <GrupoApoyos
-              titulo="Planificados y documentados"
+              titulo={COPY.grupoPlanificadosYDocumentados}
               items={consolidados.planificadosYDocumentados}
-              vacio="No hay apoyos planificados con documentación en intervenciones."
+              vacio={COPY.vacioPlanificadosYDocumentados}
             />
             <GrupoApoyos
-              titulo="Planificados, sin documentación aún"
+              titulo={COPY.grupoPlanificadosSinDocumentacion}
               items={consolidados.planificadosSinDocumentacion}
-              vacio="No hay apoyos planificados pendientes de documentar."
+              vacio={COPY.vacioPlanificadosSinDocumentacion}
             />
             <GrupoApoyos
-              titulo="Documentados sin planificación"
+              titulo={COPY.grupoDocumentadosSinPlanificacion}
               items={consolidados.documentadosSinPlanificacion}
-              vacio="No hay apoyos documentados fuera de la planificación."
+              vacio={COPY.vacioDocumentadosSinPlanificacion}
             />
           </div>
         </>
@@ -149,10 +142,7 @@ function ApoyoConsolidadoCard({ item }: { item: ApoyoConsolidadoItem }) {
                 : ""}
             </p>
           ) : (
-            <p className="mt-1 text-xs text-slate-500">
-              Planificado en este objetivo; aún sin registro en intervenciones
-              vinculadas.
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{COPY.planificadoSinRegistro}</p>
           )}
           {item.vinculoPrincipal === "mixto" && item.documentado && (
             <p className="mt-1 text-[11px] text-slate-400">

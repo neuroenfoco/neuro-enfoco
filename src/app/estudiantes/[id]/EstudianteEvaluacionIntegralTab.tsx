@@ -15,9 +15,11 @@ import type { HallazgoTipo } from "@/lib/perfil-hallazgos-storage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConclusionEvaluativaCard } from "@/components/evaluacion-integral/ConclusionEvaluativaCard";
+import { InstitutionalInfoCard } from "@/components/institutional/InstitutionalInfoCard";
 import { getCoberturaEvaluativaEstudianteView } from "@/lib/evaluacion-integral/planificacion-evaluativa-view";
 
 const COPY = GLOSSARY.evaluacionIntegral;
+const GUIDANCE = GLOSSARY.institutionalGuidance.evaluacionIntegral;
 
 type EstudianteEvaluacionIntegralTabProps = {
   estudianteId: string;
@@ -177,17 +179,26 @@ export function EstudianteEvaluacionIntegralTab({
 
   if (!detalleVigente) {
     return (
-      <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
-        <h2 className="text-lg font-semibold text-slate-900">{COPY.titulo}</h2>
-        <p className="mt-3 text-sm text-slate-600">{COPY.sinEvaluacion}</p>
-        <p className="mt-2 text-sm text-slate-500">{COPY.sinEvaluacionDetalle}</p>
-        <Link
-          href={`${ROUTES.evaluacionesNueva}?estudianteId=${estudianteId}`}
-          className="mt-6 inline-flex rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white"
-        >
-          {COPY.nuevaEvaluacion}
-        </Link>
-      </section>
+      <div className="space-y-4">
+        <section className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50/50 via-white to-indigo-50/30 p-6 sm:p-8">
+          <h2 className="text-xl font-semibold text-slate-900">{COPY.titulo}</h2>
+          <p className="mt-1 text-sm text-slate-600">{COPY.subtitulo}</p>
+        </section>
+
+        <InstitutionalInfoCard
+          variant="info"
+          title={GUIDANCE.info.title}
+          body={GUIDANCE.info.body}
+          detail={GUIDANCE.info.detail}
+        />
+
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={GUIDANCE.recomendacionSinEvaluacion.body}
+          ctaLabel={GUIDANCE.recomendacionSinEvaluacion.cta}
+          ctaHref={`${ROUTES.evaluacionesNueva}?estudianteId=${estudianteId}`}
+        />
+      </div>
     );
   }
 
@@ -227,6 +238,22 @@ export function EstudianteEvaluacionIntegralTab({
         )}
         </div>
       </header>
+
+      <InstitutionalInfoCard
+        variant="info"
+        title={GUIDANCE.info.title}
+        body={GUIDANCE.info.body}
+        detail={GUIDANCE.info.detail}
+      />
+
+      {borradorActivo ? (
+        <InstitutionalInfoCard
+          variant="recomendacion"
+          body={GUIDANCE.recomendacionBorrador.body}
+          ctaLabel={GUIDANCE.recomendacionBorrador.cta}
+          ctaHref={ROUTES.evaluacionCaptura(borradorActivo.id)}
+        />
+      ) : null}
 
       {cobertura.cantidadConclusiones > 0 ? (
         <section className="rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8">
